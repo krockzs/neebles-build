@@ -1,0 +1,3 @@
+DPkg::Pre-Invoke {
+    "/usr/lib/neebles/neebles-apt-hook";
+};

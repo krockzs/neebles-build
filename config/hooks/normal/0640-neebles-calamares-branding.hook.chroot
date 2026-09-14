@@ -1,0 +1,10 @@
+#!/bin/sh
+set -e
+
+BRANDING="/etc/calamares/branding/neebles/branding.desc"
+VERSION_FILE="/etc/neebles/version"
+
+VERSION="$(cat "$VERSION_FILE" 2>/dev/null || echo 'N.E.E.B.L.E.S. OS')"
+VERSION="${VERSION#N.E.E.B.L.E.S. OS }"
+
+sed -i "s/__NEEBLES_VERSION__/${VERSION}/g" "$BRANDING"

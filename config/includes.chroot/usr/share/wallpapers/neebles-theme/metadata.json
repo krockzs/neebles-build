@@ -1,0 +1,15 @@
+{
+    "KPlugin": {
+        "Id": "neebles-theme",
+        "Name": "NEEBLES",
+        "Description": "N.E.E.B.L.E.S. OS default wallpaper",
+        "Authors": [
+            {
+                "Name": "Olate Stark"
+            },
+            {
+                "Name": "Jarvis"
+            }
+        ]
+    }
+}

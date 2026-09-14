@@ -1,0 +1,30 @@
+#!/bin/sh
+set -e
+
+SCRIPT_DIR="$(CDPATH= cd -- "$(dirname -- "$0")" && pwd)"
+ROOT="$(CDPATH= cd -- "$SCRIPT_DIR/../../.." && pwd)"
+
+MASCOT="$ROOT/config/includes.binary/isolinux/neebles-mascot.png"
+OUT="$ROOT/binary/isolinux/splash.png"
+
+VERSION="$(cat "$ROOT/chroot/etc/neebles/version" 2>/dev/null || echo 'N.E.E.B.L.E.S. OS')"
+KERNEL="$(ls "$ROOT"/chroot/boot/vmlinuz-* 2>/dev/null | sort -V | tail -n1 | sed 's#^.*/vmlinuz-##')"
+ARCH="$(chroot "$ROOT/chroot" dpkg --print-architecture 2>/dev/null || echo amd64)"
+
+[ -n "$KERNEL" ] || KERNEL="unknown"
+
+convert -size 640x480 xc:black \
+  "$MASCOT" \
+  -geometry +20+20 \
+  -composite \
+  -font DejaVu-Sans \
+  -fill white \
+  -pointsize 18 \
+  -annotate +418+420 "$VERSION" \
+  -pointsize 13 \
+  -fill '#B388FF' \
+  -annotate +418+446 "Kernel: $KERNEL" \
+  -annotate +418+468 "Architecture: $ARCH" \
+  -alpha off \
+  -type TrueColor \
+  PNG24:"$OUT"

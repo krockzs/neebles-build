@@ -1,0 +1,101 @@
+# NEEBLES OS - Hardware compatibility layer
+
+# Debian Live firmware bundle
+
+# Generic firmware
+firmware-linux
+firmware-linux-free
+firmware-linux-nonfree
+firmware-misc-nonfree
+
+# Graphics firmware
+firmware-amd-graphics
+firmware-nvidia-graphics
+firmware-intel-graphics
+
+# Intel
+firmware-iwlwifi
+firmware-intel-misc
+firmware-intel-sound
+firmware-sof-signed
+intel-microcode
+
+# AMD
+amd64-microcode
+
+# Realtek
+firmware-realtek
+
+# Qualcomm / Atheros
+firmware-atheros
+firmware-ath9k-htc
+firmware-carl9170
+firmware-qcom-soc
+
+# Broadcom
+firmware-brcm80211
+firmware-bnx2
+firmware-bnx2x
+
+# MediaTek
+firmware-mediatek
+
+# Marvell / Libertas
+firmware-libertas
+firmware-marvell-prestera
+
+# Other network/storage hardware
+firmware-cavium
+firmware-myricom
+firmware-netronome
+firmware-netxen
+firmware-qlogic
+firmware-samsung
+firmware-siano
+firmware-ti-connectivity
+firmware-zd1211
+
+# Bluetooth
+bluez
+bluetooth
+bluez-firmware
+rfkill
+
+# Networking
+network-manager
+network-manager-openvpn
+wpasupplicant
+wireless-regdb
+ethtool
+modemmanager
+
+# Audio
+alsa-utils
+pipewire
+pipewire-audio
+pipewire-alsa
+wireplumber
+pavucontrol
+
+# X11 / graphics / input compatibility
+xserver-xorg-input-all
+xserver-xorg-video-all
+mesa-vulkan-drivers
+mesa-va-drivers
+mesa-vdpau-drivers
+libgl1-mesa-dri
+
+# Laptop / desktop hardware support
+task-laptop
+upower
+udisks2
+bolt
+
+# Firmware management
+fwupd
+gnome-firmware
+
+# Hardware diagnostic tools
+usbutils
+pciutils
+lshw

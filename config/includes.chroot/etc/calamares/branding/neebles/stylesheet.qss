@@ -1,0 +1,555 @@
+QWidget {
+    background-color: #000000;
+    color: #F5F5F5;
+}
+
+QLabel {
+    color: #F5F5F5;
+    background: transparent;
+}
+
+QPushButton {
+    background-color: #7C3AED;
+    color: #F5F5F5;
+    border: 1px solid #A78BFA;
+    border-radius: 4px;
+    padding: 6px 14px;
+}
+
+QPushButton:hover {
+    background-color: #A78BFA;
+    color: #000000;
+}
+
+QPushButton:pressed {
+    background-color: #6D28D9;
+}
+
+QPushButton:disabled {
+    background-color: #0A0A0A;
+    color: #666666;
+    border-color: #333333;
+}
+
+QLineEdit,
+QComboBox,
+QSpinBox,
+QDoubleSpinBox,
+QTextEdit,
+QPlainTextEdit,
+QListView,
+QTreeView,
+QTableView {
+    background-color: #0A0A0A;
+    color: #F5F5F5;
+    border: 1px solid #7C3AED;
+    selection-background-color: #7C3AED;
+    selection-color: #F5F5F5;
+}
+
+QComboBox QAbstractItemView {
+    background-color: #0A0A0A;
+    color: #F5F5F5;
+    border: 1px solid #7C3AED;
+    selection-background-color: #7C3AED;
+}
+
+QCheckBox,
+QRadioButton {
+    color: #F5F5F5;
+    background: transparent;
+}
+
+QCheckBox::indicator:checked,
+QRadioButton::indicator:checked {
+    background-color: #22D3EE;
+    border: 1px solid #22D3EE;
+}
+
+QProgressBar {
+    background-color: #0A0A0A;
+    color: #F5F5F5;
+    border: 1px solid #7C3AED;
+    text-align: center;
+}
+
+QProgressBar::chunk {
+    background-color: #7C3AED;
+}
+
+QGroupBox {
+    border: 1px solid #7C3AED;
+    margin-top: 8px;
+    color: #F5F5F5;
+}
+
+QGroupBox::title {
+    subcontrol-origin: margin;
+    left: 8px;
+    padding: 0 4px;
+    color: #22D3EE;
+}
+
+QToolTip {
+    background-color: #0A0A0A;
+    color: #F5F5F5;
+    border: 1px solid #22D3EE;
+}
+
+/* NEEBLES navigation */
+#navigationApp QPushButton {
+    min-height: 30px;
+    min-width: 88px;
+    padding: 6px 16px;
+    border-radius: 4px;
+}
+
+#navigationApp QPushButton {
+    background-color: #000000;
+    color: #F5F5F5;
+    border: 1px solid #22D3EE;
+}
+
+#navigationApp QPushButton:hover {
+    background-color: #0A0A0A;
+    border-color: #A78BFA;
+}
+
+#navigationApp QPushButton:pressed {
+    background-color: #7C3AED;
+    border-color: #7C3AED;
+}
+
+#navigationApp QPushButton:default {
+    background-color: #7C3AED;
+    color: #FFFFFF;
+    border: 1px solid #A78BFA;
+}
+
+#navigationApp QPushButton:default:hover {
+    background-color: #A78BFA;
+    color: #000000;
+}
+
+#navigationApp QPushButton:disabled {
+    background-color: #0A0A0A;
+    color: #555555;
+    border-color: #222222;
+}
+
+/* NEEBLES requirements / warnings */
+#requirementsChecker {
+    background-color: #000000;
+    border: 1px solid #22D3EE;
+    border-radius: 4px;
+}
+
+#requirementsChecker QListView {
+    background-color: #0A0A0A;
+    color: #F5F5F5;
+    border: 1px solid #7C3AED;
+    selection-background-color: #7C3AED;
+    selection-color: #FFFFFF;
+}
+
+#resultsExplanation {
+    color: #EF4444;
+    background: transparent;
+    font-weight: 600;
+}
+
+#welcomeLogo {
+    background: transparent;
+}
+
+QMessageBox {
+    background-color: #000000;
+    color: #F5F5F5;
+}
+
+QMessageBox QLabel {
+    color: #F5F5F5;
+    background: transparent;
+}
+
+QMessageBox QPushButton {
+    background-color: #7C3AED;
+    color: #FFFFFF;
+    border: 1px solid #A78BFA;
+}
+
+/* NEEBLES checkboxes */
+QCheckBox {
+    color: #F5F5F5;
+    background: transparent;
+    spacing: 7px;
+}
+
+QCheckBox::indicator {
+    width: 16px;
+    height: 16px;
+    background-color: #000000;
+    border: 1px solid #7C3AED;
+    border-radius: 3px;
+}
+
+QCheckBox::indicator:hover {
+    border-color: #22D3EE;
+}
+
+QCheckBox::indicator:checked {
+    background-color: #22D3EE;
+    border: 1px solid #22D3EE;
+}
+
+QCheckBox::indicator:disabled {
+    background-color: #0A0A0A;
+    border-color: #333333;
+}
+
+/* NEEBLES radio buttons */
+QRadioButton {
+    color: #F5F5F5;
+    background: transparent;
+    spacing: 7px;
+}
+
+QRadioButton::indicator {
+    width: 16px;
+    height: 16px;
+    background-color: #000000;
+    border: 1px solid #7C3AED;
+    border-radius: 8px;
+}
+
+QRadioButton::indicator:hover {
+    border-color: #22D3EE;
+}
+
+QRadioButton::indicator:checked {
+    background-color: #22D3EE;
+    border: 4px solid #000000;
+}
+
+QRadioButton::indicator:disabled {
+    background-color: #0A0A0A;
+    border-color: #333333;
+}
+
+/* NEEBLES progress */
+QProgressBar {
+    min-height: 16px;
+    background-color: #0A0A0A;
+    color: #F5F5F5;
+    border: 1px solid #7C3AED;
+    border-radius: 3px;
+    text-align: center;
+}
+
+QProgressBar::chunk {
+    background-color: #7C3AED;
+    border-radius: 2px;
+}
+
+/* NEEBLES partition information */
+#partitionBarView,
+#partitionLabel {
+    background-color: #0A0A0A;
+    color: #F5F5F5;
+}
+
+#bootInfoLabel,
+#deviceInfoLabel {
+    color: #22D3EE;
+    background: transparent;
+}
+
+/* NEEBLES summary */
+#summaryStep {
+    background-color: #000000;
+}
+
+#summaryTitle {
+    color: #A78BFA;
+    background: transparent;
+    font-size: 18px;
+    font-weight: 600;
+}
+
+#summaryItemTitle {
+    color: #22D3EE;
+    background: transparent;
+    font-weight: 600;
+}
+
+#summaryItemBody {
+    color: #F5F5F5;
+    background: transparent;
+}
+
+#summaryStep QFrame {
+    background-color: #0A0A0A;
+    border: 1px solid #7C3AED;
+    border-radius: 4px;
+}
+
+/* NEEBLES users / hostname / passwords */
+#Page_UserSetup {
+    background-color: #000000;
+}
+
+#textBoxFullName,
+#textBoxLoginName,
+#textBoxHostname,
+#textBoxUserPassword,
+#textBoxUserVerifiedPassword,
+#textBoxRootPassword,
+#textBoxVerifiedRootPassword,
+#domainPasswordField {
+    background-color: #0A0A0A;
+    color: #F5F5F5;
+    border: 1px solid #7C3AED;
+    border-radius: 4px;
+    padding: 5px 7px;
+}
+
+#textBoxFullName:focus,
+#textBoxLoginName:focus,
+#textBoxHostname:focus,
+#textBoxUserPassword:focus,
+#textBoxUserVerifiedPassword:focus,
+#textBoxRootPassword:focus,
+#textBoxVerifiedRootPassword:focus,
+#domainPasswordField:focus {
+    border: 1px solid #22D3EE;
+}
+
+#labelFullName,
+#labelUsername,
+#labelHostname,
+#labelUserPassword,
+#labelRootPassword,
+#labelChooseRootPassword,
+#domainPasswordLabel {
+    color: #22D3EE;
+    background: transparent;
+    font-weight: 600;
+}
+
+#labelFullNameError,
+#labelUsernameError,
+#labelHostnameError,
+#labelUserPasswordError,
+#labelRootPasswordError {
+    color: #EF4444;
+    background: transparent;
+    font-weight: 600;
+}
+
+#username_label_2,
+#password_label_2 {
+    color: #A78BFA;
+    background: transparent;
+    font-weight: 600;
+}
+
+#checkBoxRequireStrongPassword,
+#checkBoxDoAutoLogin,
+#checkBoxReusePassword,
+#useADCheckbox {
+    color: #F5F5F5;
+    background: transparent;
+}
+
+/* NEEBLES partitioning */
+#PartitionPage,
+#CreatePartitionDialog,
+#EditExistingPartitionDialog,
+#CreatePartitionTableDialog,
+#EncryptWidget {
+    background-color: #000000;
+    color: #F5F5F5;
+}
+
+#deviceComboBox,
+#bootLoaderComboBox,
+#mountPointComboBox,
+#fileSystemComboBox,
+#sizeSpinBox,
+#filesystemLabelEdit {
+    background-color: #0A0A0A;
+    color: #F5F5F5;
+    border: 1px solid #7C3AED;
+    border-radius: 4px;
+    padding: 4px 6px;
+}
+
+#deviceComboBox:focus,
+#bootLoaderComboBox:focus,
+#mountPointComboBox:focus,
+#fileSystemComboBox:focus,
+#sizeSpinBox:focus,
+#filesystemLabelEdit:focus {
+    border: 1px solid #22D3EE;
+}
+
+#partitionTreeView {
+    background-color: #0A0A0A;
+    color: #F5F5F5;
+    border: 1px solid #7C3AED;
+    selection-background-color: #7C3AED;
+    selection-color: #FFFFFF;
+}
+
+#partitionTreeView::item:selected {
+    background-color: #7C3AED;
+    color: #FFFFFF;
+}
+
+#partitionTreeView::item:hover {
+    background-color: #151515;
+    color: #22D3EE;
+}
+
+#partitionBarsView,
+#partitionLabelsView,
+#partitionBarView,
+#partitionLabel {
+    background-color: #0A0A0A;
+    color: #F5F5F5;
+    border: 1px solid #7C3AED;
+}
+
+#bootInfoLabel,
+#deviceInfoLabel,
+#mountPointLabel,
+#partitionTypeLabel,
+#fileSystemLabel,
+#fileSystemLabelLabel,
+#lvNameLabel,
+#pvListLabel,
+#vgNameLabel,
+#vgTypeLabel,
+#peSizeLabel,
+#totalSizeLabel,
+#usedSizeLabel,
+#totalSectorsLabel,
+#lvQuantityLabel {
+    color: #22D3EE;
+    background: transparent;
+    font-weight: 600;
+}
+
+#mountPointExplanation,
+#m_previewAfterLabel,
+#m_previewBeforeLabel,
+#m_selectLabel,
+#m_drivesLabel {
+    color: #A78BFA;
+    background: transparent;
+}
+
+#areYouSureLabel,
+#m_messageLabel,
+#m_encryptionUnsupportedLabel {
+    color: #EF4444;
+    background: transparent;
+    font-weight: 600;
+}
+
+#newPartitionTableButton,
+#resizeVolumeGroupButton {
+    background-color: #000000;
+    color: #F5F5F5;
+    border: 1px solid #22D3EE;
+}
+
+#newPartitionTableButton:hover,
+#resizeVolumeGroupButton:hover {
+    border-color: #A78BFA;
+    color: #22D3EE;
+}
+
+/* NEEBLES finished page */
+#FinishedPage {
+    background-color: #000000;
+    color: #F5F5F5;
+}
+
+#FinishedPage QLabel {
+    color: #F5F5F5;
+    background: transparent;
+}
+
+#restartCheckBox {
+    color: #22D3EE;
+    background: transparent;
+    font-weight: 600;
+}
+
+/* NEEBLES execution / progress */
+#slideshow {
+    background-color: #000000;
+    color: #F5F5F5;
+}
+
+#exec-progress {
+    min-height: 18px;
+    background-color: #0A0A0A;
+    color: #F5F5F5;
+    border: 1px solid #7C3AED;
+    border-radius: 4px;
+    text-align: center;
+}
+
+#exec-progress::chunk {
+    background-color: #7C3AED;
+    border-radius: 3px;
+}
+
+#exec-message {
+    color: #22D3EE;
+    background: transparent;
+    font-weight: 600;
+}
+
+#mainApp,
+#viewManager,
+#viewManagerStack {
+    background-color: #000000;
+    color: #F5F5F5;
+}
+
+#sidebarApp {
+    background-color: #000000;
+    color: #F5F5F5;
+}
+
+#sidebarMenuApp {
+    background-color: #000000;
+    color: #F5F5F5;
+}
+
+#view-button-back,
+#view-button-cancel {
+    background-color: #000000;
+    color: #F5F5F5;
+    border: 1px solid #22D3EE;
+}
+
+#view-button-back:hover,
+#view-button-cancel:hover {
+    border-color: #A78BFA;
+    color: #22D3EE;
+}
+
+#view-button-next {
+    background-color: #7C3AED;
+    color: #FFFFFF;
+    border: 1px solid #A78BFA;
+}
+
+#view-button-next:hover {
+    background-color: #A78BFA;
+    color: #000000;
+}

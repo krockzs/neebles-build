@@ -1,0 +1,130 @@
+#!/bin/bash
+
+set -u
+
+MODE="${1:---interactive}"
+
+MANIFEST_URL="https://raw.githubusercontent.com/krockzs/neebles-os/main/bootstrap/manifest.json"
+
+case "$MODE" in
+    --interactive|--headless)
+        ;;
+    *)
+        exit 1
+        ;;
+esac
+
+TMPDIR="$(mktemp -d)"
+MANIFEST="$TMPDIR/manifest.json"
+
+cleanup() {
+    rm -rf "$TMPDIR"
+}
+
+trap cleanup EXIT
+
+fail() {
+    echo "[N.E.E.B.L.E.S.] $1" >&2
+
+    if [ "$MODE" = "--interactive" ] && command -v kdialog >/dev/null 2>&1; then
+        kdialog --error "$1"
+    fi
+
+    exit 1
+}
+
+echo "[N.E.E.B.L.E.S.] Consultando N.E.E.B.L.E.S. OS..."
+
+curl -LfsS \
+    --proto '=https' \
+    --tlsv1.2 \
+    --connect-timeout 4 \
+    --max-time 12 \
+    "${MANIFEST_URL}?nocache=$(date +%s)" \
+    -o "$MANIFEST" \
+    || fail "No fue posible obtener el manifest del inyector."
+
+readarray -t DATA < <(
+python3 - "$MANIFEST" <<'PY'
+import json
+import sys
+
+with open(sys.argv[1], encoding="utf-8") as f:
+    data = json.load(f)
+
+if data.get("schema") != 1:
+    raise SystemExit(1)
+
+if data.get("channel") != "stable":
+    raise SystemExit(1)
+
+version = data.get("version")
+filename = data.get("file")
+sha256 = data.get("sha256")
+url = data.get("url")
+
+if not isinstance(version, str):
+    raise SystemExit(1)
+
+parts = version.split(".")
+
+if len(parts) != 3 or not all(part.isdigit() for part in parts):
+    raise SystemExit(1)
+
+if not isinstance(filename, str) or not filename:
+    raise SystemExit(1)
+
+if "/" in filename or chr(92) in filename:
+    raise SystemExit(1)
+
+if not isinstance(sha256, str):
+    raise SystemExit(1)
+
+if len(sha256) != 64:
+    raise SystemExit(1)
+
+if not all(c in "0123456789abcdefABCDEF" for c in sha256):
+    raise SystemExit(1)
+
+if not isinstance(url, str) or not url.startswith("https:" + "//"):
+    raise SystemExit(1)
+
+print(version)
+print(filename)
+print(sha256.lower())
+print(url)
+PY
+) || fail "Manifest del inyector inválido."
+
+[ "${#DATA[@]}" -eq 4 ] \
+    || fail "Manifest del inyector incompleto."
+
+VERSION="${DATA[0]}"
+FILE="${DATA[1]}"
+EXPECTED_SHA="${DATA[2]}"
+URL="${DATA[3]}"
+
+DESTINATION="$TMPDIR/$FILE"
+
+echo "[N.E.E.B.L.E.S.] Descargando inyector ${VERSION}..."
+
+curl -LfsS \
+    --proto '=https' \
+    --tlsv1.2 \
+    --connect-timeout 4 \
+    --max-time 120 \
+    "$URL" \
+    -o "$DESTINATION" \
+    || fail "No fue posible descargar el inyector."
+
+ACTUAL_SHA="$(sha256sum "$DESTINATION" | awk '{print $1}')"
+
+[ "$ACTUAL_SHA" = "$EXPECTED_SHA" ] \
+    || fail "La verificación SHA-256 del inyector falló."
+
+chmod 700 "$DESTINATION" \
+    || fail "No fue posible preparar el inyector."
+
+echo "[N.E.E.B.L.E.S.] Iniciando inyector ${VERSION}..."
+
+exec "$DESTINATION" "$MODE"

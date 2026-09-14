@@ -1,0 +1,7 @@
+# N.E.E.B.L.E.S. OS
+# Calamares is managed exclusively through NEEBLES OS builds.
+# Never update it through normal APT transactions.
+
+Package: calamares calamares-settings-debian
+Pin: version *
+Pin-Priority: -1

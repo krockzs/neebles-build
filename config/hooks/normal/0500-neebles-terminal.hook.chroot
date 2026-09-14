@@ -1,0 +1,8 @@
+#!/bin/sh
+set -e
+
+LINE='if [ -z "${NEEBLES_FETCH_SHOWN:-}" ] && [ -t 1 ] && [ -x /usr/local/bin/neebles-fetch ]; then export NEEBLES_FETCH_SHOWN=1; /usr/local/bin/neebles-fetch; fi'
+
+grep -Fqx "$LINE" /etc/bash.bashrc || {
+    printf '\n# N.E.E.B.L.E.S. terminal identity\n%s\n' "$LINE" >> /etc/bash.bashrc
+}

@@ -1,0 +1,40 @@
+#!/bin/sh
+if [ ! -d /run/live/medium ] && [ ! -d /lib/live/mount/medium ]; then
+    DESKTOP="$(xdg-user-dir DESKTOP)"
+    rm -f "$DESKTOP/neebles-install.desktop"
+    exit 0
+fi
+DESKTOP="$(xdg-user-dir DESKTOP)"
+mkdir -p "$DESKTOP"
+
+if [ -f /usr/bin/lxsession ]; then
+    cat > "$DESKTOP/neebles-install.desktop" <<EODESKTOP
+[Desktop Entry]
+Type=Link
+Name=Install NEEBLES
+Icon=neebles-install
+URL=/usr/share/applications/calamares-install-debian.desktop
+EODESKTOP
+else
+    cp /usr/share/applications/calamares-install-debian.desktop \
+       "$DESKTOP/neebles-install.desktop"
+
+    chmod +x "$DESKTOP/neebles-install.desktop"
+fi
+
+if [ "$XDG_CURRENT_DESKTOP" = "XFCE" ]; then
+    gio set --type=string "$DESKTOP/neebles-install.desktop" \
+        metadata::trusted true
+
+    gio set --type=string "$DESKTOP/neebles-install.desktop" \
+        metadata::xfce-exe-checksum \
+        "$(sha256sum "$DESKTOP/neebles-install.desktop" | cut -f1 -d' ')"
+
+    touch "$DESKTOP/neebles-install.desktop"
+fi
+
+ionice -c 3 cat /usr/bin/calamares > /dev/null 2>&1
+
+for file in $(ldd /usr/bin/calamares | awk '{print $3}'); do
+    [ -f "$file" ] && ionice -c 3 cat "$file" > /dev/null 2>&1
+done

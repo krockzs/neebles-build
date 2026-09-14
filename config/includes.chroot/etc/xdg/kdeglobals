@@ -1,0 +1,8 @@
+[General]
+ColorScheme=NEEBLES
+
+[KDE]
+LookAndFeelPackage=neebles-theme
+
+[Icons]
+Theme=breeze-dark

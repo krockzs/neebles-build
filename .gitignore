@@ -1,0 +1,29 @@
+# live-build generated state
+.build/
+binary/
+chroot/
+
+# Package/download cache
+cache/
+
+# Generated ISO images
+*.iso
+
+# Generated live-build metadata
+binary.modified_timestamps
+chroot.files
+chroot.packages.*
+live-image-amd64.contents
+live-image-amd64.files
+live-image-amd64.packages
+neebles-os-amd64.contents
+neebles-os-amd64.files
+neebles-os-amd64.packages
+
+# Generated Calamares build trees
+build-tools/calamares-locale-3.3.14-build/
+build-tools/calamares-partition-build/
+
+# Local Calamares source/build workspace
+# Modified source is maintained separately in krockzs/neebles-calamares
+build-tools/

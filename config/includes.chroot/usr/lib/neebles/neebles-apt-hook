@@ -1,0 +1,12 @@
+#!/bin/bash
+
+set -u
+
+NEEBLES="/opt/neebles/client/bin/neebles"
+
+if [ ! -x "$NEEBLES" ]; then
+    exit 0
+fi
+
+"$NEEBLES" recovery apt-pre-transaction
+exit $?

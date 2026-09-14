@@ -1,0 +1,8 @@
+[Plymouth Theme]
+Name=NEEBLES Theme
+Description=N.E.E.B.L.E.S. OS boot theme
+ModuleName=script
+
+[script]
+ImageDir=/usr/share/plymouth/themes/neebles-theme
+ScriptFile=/usr/share/plymouth/themes/neebles-theme/neebles-theme.script

@@ -1,0 +1,15 @@
+#!/bin/bash
+set -u
+
+MARKER="$HOME/.config/neebles-theme-applied"
+
+if [ -f "$MARKER" ]; then
+    exit 0
+fi
+
+mkdir -p "$HOME/.config"
+
+plasma-apply-lookandfeel -a neebles-theme >/dev/null 2>&1 || exit 0
+
+touch "$MARKER"
+exit 0

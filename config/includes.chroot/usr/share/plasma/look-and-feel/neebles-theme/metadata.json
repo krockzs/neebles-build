@@ -1,0 +1,18 @@
+{
+    "KPackageStructure": "Plasma/LookAndFeel",
+    "KPlugin": {
+        "Authors": [
+            {
+                "Name": "Olate Stark"
+            },
+            {
+                "Name": "Jarvis"
+            }
+        ],
+        "Category": "",
+        "Description": "N.E.E.B.L.E.S. OS visual theme",
+        "Id": "neebles-theme",
+        "License": "GPLv2+",
+        "Name": "NEEBLES Theme"
+    }
+}

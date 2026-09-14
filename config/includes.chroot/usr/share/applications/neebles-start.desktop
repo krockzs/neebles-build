@@ -1,0 +1,11 @@
+[Desktop Entry]
+Type=Application
+Version=1.0
+Name=Start NEEBLES
+GenericName=NEEBLES
+Comment=Start N.E.E.B.L.E.S.
+Exec=/usr/lib/neebles/neebles-launcher
+Icon=neebles
+Terminal=false
+Categories=System;
+StartupNotify=true

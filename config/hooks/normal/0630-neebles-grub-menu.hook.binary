@@ -1,0 +1,46 @@
+#!/bin/sh
+set -e
+
+SCRIPT_DIR="$(CDPATH= cd -- "$(dirname -- "$0")" && pwd)"
+ROOT="$(CDPATH= cd -- "$SCRIPT_DIR/../../.." && pwd)"
+
+GRUB="$ROOT/binary/boot/grub/grub.cfg"
+START="$ROOT/binary/boot/grub/install_start.cfg"
+INSTALL="$ROOT/binary/boot/grub/install.cfg"
+THEME="$ROOT/binary/boot/grub/live-theme/theme.txt"
+
+# Menú principal
+if [ -f "$GRUB" ]; then
+    sed -i \
+      -e 's/"Live system (amd64)"/"Start N.E.E.B.L.E.S. OS"/' \
+      -e 's/"Live system (amd64 fail-safe mode)"/"Start N.E.E.B.L.E.S. OS (Safe Mode)"/' \
+      -e "s/submenu 'Advanced install options \.\.\.'/submenu 'Advanced N.E.E.B.L.E.S. Options ...'/" \
+      "$GRUB"
+fi
+
+# Entradas directas del instalador
+if [ -f "$START" ]; then
+    sed -i \
+      -e "s/menuentry 'Start installer'/menuentry 'Install N.E.E.B.L.E.S.'/" \
+      -e "s/menuentry 'Start installer with speech synthesis'/menuentry 'Install N.E.E.B.L.E.S. with speech synthesis'/" \
+      "$START"
+fi
+
+# Submenús avanzados
+if [ -f "$INSTALL" ]; then
+    sed -i \
+      -e "s/submenu 'Graphical installer \.\.\.'/submenu 'Graphical installer ...'/" \
+      -e "s/submenu 'Text installer \.\.\.'/submenu 'Text installer ...'/" \
+      -e "s/submenu 'Graphical installer with dark theme \.\.\.'/submenu 'Graphical installer with dark theme ...'/" \
+      -e "s/submenu 'Text installer with dark theme \.\.\.'/submenu 'Text installer with dark theme ...'/" \
+      -e "s/submenu 'Installer with speech synthesis \.\.\.'/submenu 'Installer with speech synthesis ...'/" \
+      "$INSTALL"
+fi
+
+# Identidad púrpura N.E.E.B.L.E.S.
+if [ -f "$THEME" ]; then
+    sed -i \
+      -e 's/item_color = "#a8a8a8"/item_color = "#d0d0d0"/' \
+      -e 's/selected_item_color= "#ffffff"/selected_item_color= "#B388FF"/' \
+      "$THEME"
+fi

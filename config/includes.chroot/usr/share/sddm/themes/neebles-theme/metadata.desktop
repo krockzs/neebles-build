@@ -1,0 +1,13 @@
+[SddmGreeterTheme]
+Name=NEEBLES Theme
+Description=N.E.E.B.L.E.S. OS login theme
+Author=Olate Stark and Jarvis
+License=GPLv2+
+Type=sddm-theme
+Version=1.0.2
+Screenshot=preview.png
+MainScript=Main.qml
+ConfigFile=theme.conf
+Theme-Id=neebles-theme
+Theme-API=2.0
+QtVersion=6

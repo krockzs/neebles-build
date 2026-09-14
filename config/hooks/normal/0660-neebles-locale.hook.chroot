@@ -1,0 +1,16 @@
+#!/bin/sh
+set -e
+
+if [ -f /etc/locale.gen ]; then
+    grep -q '^es_CL.UTF-8 UTF-8$' /etc/locale.gen || echo 'es_CL.UTF-8 UTF-8' >> /etc/locale.gen
+    grep -q '^en_US.UTF-8 UTF-8$' /etc/locale.gen || echo 'en_US.UTF-8 UTF-8' >> /etc/locale.gen
+fi
+
+locale-gen es_CL.UTF-8 en_US.UTF-8
+
+cat > /etc/default/locale <<'EOL'
+LANG=es_CL.UTF-8
+LC_TIME=es_CL.UTF-8
+EOL
+
+touch /etc/environment

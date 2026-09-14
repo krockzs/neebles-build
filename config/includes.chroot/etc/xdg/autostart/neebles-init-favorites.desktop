@@ -1,0 +1,7 @@
+[Desktop Entry]
+Type=Application
+Name=NEEBLES Favorites Initializer
+Exec=/usr/lib/neebles/neebles-init-favorites
+OnlyShowIn=KDE;
+NoDisplay=true
+X-KDE-autostart-phase=2

@@ -1,0 +1,68 @@
+#!/usr/bin/python3
+
+import sqlite3
+import time
+from pathlib import Path
+
+DB = Path.home() / ".local/share/kactivitymanagerd/resources/database"
+MARKER = Path.home() / ".config/neebles/favorites-initialized"
+
+FAVORITES = [
+    "preferred://browser",
+    "applications:systemsettings.desktop",
+    "applications:org.kde.dolphin.desktop",
+    "applications:org.kde.konsole.desktop",
+    "applications:neebles-start.desktop",
+    "applications:org.kde.discover.desktop",
+    "applications:org.kde.plasma-systemmonitor.desktop",
+]
+
+ACTIVITY = ":global"
+AGENT = "org.kde.plasma.favorites.applications"
+
+if MARKER.exists():
+    raise SystemExit(0)
+
+for _ in range(60):
+
+    if not DB.exists():
+        time.sleep(1)
+        continue
+
+    try:
+        conn = sqlite3.connect(DB, timeout=2)
+
+        cur = conn.cursor()
+
+        cur.execute(
+            "DELETE FROM ResourceLink WHERE initiatingAgent = ?",
+            (AGENT,)
+        )
+
+        for resource in FAVORITES:
+            cur.execute(
+                """
+                INSERT OR IGNORE INTO ResourceLink
+                (usedActivity, initiatingAgent, targettedResource)
+                VALUES (?, ?, ?)
+                """,
+                (ACTIVITY, AGENT, resource),
+            )
+
+        conn.commit()
+        conn.close()
+
+        MARKER.parent.mkdir(parents=True, exist_ok=True)
+        MARKER.touch()
+
+        raise SystemExit(0)
+
+    except sqlite3.Error:
+        try:
+            conn.close()
+        except Exception:
+            pass
+
+        time.sleep(1)
+
+raise SystemExit(1)

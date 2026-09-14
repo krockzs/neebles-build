@@ -1,0 +1,40 @@
+#!/bin/sh
+
+###
+# N.E.E.B.L.E.S. wrapper for Calamares
+###
+
+sudo mv /etc/fstab /etc/fstab.orig.calamares 2>/dev/null || true
+
+export QT_AUTO_SCREEN_SCALE_FACTOR=1
+
+SLIDES_PID_FILE="/run/neebles/calamares/slides.pid"
+
+if [ -x /usr/lib/neebles/neebles-calamares-slides ]; then
+    sudo rm -f "$SLIDES_PID_FILE"
+    sudo /usr/lib/neebles/neebles-calamares-slides >/dev/null 2>&1 &
+fi
+
+xhost +si:localuser:root >/dev/null 2>&1 || true
+
+pkexec calamares
+
+xhost -si:localuser:root >/dev/null 2>&1 || true
+
+if [ -f "$SLIDES_PID_FILE" ]; then
+    SLIDES_PID="$(cat "$SLIDES_PID_FILE" 2>/dev/null || true)"
+
+    case "$SLIDES_PID" in
+        ''|*[!0-9]*) ;;
+        *)
+            sudo kill "$SLIDES_PID" 2>/dev/null || true
+            ;;
+    esac
+fi
+
+sudo rm -rf /run/neebles/calamares/slides
+sudo rm -f "$SLIDES_PID_FILE"
+
+if [ -f /etc/fstab.orig.calamares ]; then
+    sudo mv /etc/fstab.orig.calamares /etc/fstab
+fi
