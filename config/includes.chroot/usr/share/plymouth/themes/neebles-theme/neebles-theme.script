@@ -1040,7 +1040,7 @@ fun update_glow_anim () {
         glow_opacity = Math.Sin(glow_progress * Math.Pi);
         global.glow_sprite.SetOpacity(glow_opacity);
 
-        global.anim_iter += 3;
+        global.anim_iter += 5;
 
         if (global.anim_iter >= NB_ANIM_STEPS) {
             global.glow_sprite.SetOpacity(0);
