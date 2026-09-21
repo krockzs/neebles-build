@@ -1,0 +1,356 @@
+Format: https://www.debian.org/doc/packaging-manuals/copyright-format/1.0/
+Upstream-Name: kguiaddons
+Source: https://invent.kde.org/frameworks/kguiaddons
+Upstream-Contact: kde-frameworks-devel@kde.org
+
+Files: *
+Copyright: 2021, Ahmad Samir <a.samirh78@gmail.com>
+           2005-2014, Albert Astals Cid <aacid@kde.org>
+           2013, Aleix Pol Gonzalez <aleixpol@blue-systems.com>
+           2019, Aleix Pol Gonzalez <aleixpol@kde.org>
+           2020, David Redondo <kde@david-redondo.de>
+           2022-2023, Harald Sitter <sitter@kde.org>
+           2024, Manuel Alcaraz Zambrano <manuelalcarazzam@gmail.com>
+           2013, Martin Gräßlin <mgraesslin@kde.org>
+           2013, Martin Klapetek <mklapetek@kde.org>
+           2009, Michael Leupold <lemma@confuego.org>
+           2010, Michael Pyne <mpyne@kde.org>
+           2022, Nicolas Fella <nicolas.fella@gmx.de>
+           1999, Waldo Bastian <bastian@kde.org>
+License: LGPL-2.1-only OR LGPL-3.0-only OR LicenseRef-KDE-Accepted-LGPL
+
+Files: python/CMakeLists.txt
+       src/android/AndroidManifest.xml
+       src/android/build.gradle
+       src/android/CMakeLists.txt
+       src/android/KF6GuiAddons-android-dependencies.xml
+       src/geo-scheme-handler/CMakeLists.txt
+       src/qml/CMakeLists.txt
+Copyright: 2024, Manuel Alcaraz Zambrano <manuelalcarazzam@gmail.com>
+           2021-2024, Volker Krause <vkrause@kde.org>
+License: BSD-2-Clause
+
+Files: .gitlab-ci.yml
+       src/geo-scheme-handler/google-maps-geo-handler.desktop
+       src/geo-scheme-handler/openstreetmap-geo-handler.desktop
+       src/geo-scheme-handler/wheelmap-geo-handler.desktop
+Copyright: 2022, Florian Edelmann <florian-edelmann@online.de>
+           2020-2021, Volker Krause <vkrause@kde.org>
+License: CC0-1.0
+
+Files: tests/kcountryflagemojiiconenginedemo.cpp
+       tests/kcursorsavergui_test.cpp
+       tests/kmodifierkeyinfotest.cpp
+       tests/openurltest.cpp
+Copyright: 2013, Aleix Pol Gonzalez <aleixpol@blue-systems.com>
+           2023, Harald Sitter <sitter@kde.org>
+           2020, Laurent Montel <montel@kde.org>
+           2009, Michael Leupold <lemma@confuego.org>
+License: GPL-2.0-only OR GPL-3.0-only OR LicenseRef-KDE-Accepted-GPL
+
+Files: src/systemclipboard/tests/paste.cpp
+Copyright: 2020, David Edmundson <davidedmundson@kde.org>
+License: GPL-2.0-or-later
+
+Files: src/util/kjobwindows.cpp
+       src/util/kjobwindows.h
+Copyright: 2013, David Faure <faure@kde.org>
+License: LGPL-2.0-only OR LGPL-3.0-only OR LicenseRef-KDE-Accepted-LGPL
+
+Files: autotests/kcursorsavertest.cpp
+       autotests/kcursorsavertest.h
+       autotests/kgeourihandlertest.cpp
+       autotests/kurlhandlertest.cpp
+       autotests/kurlhandlertest.h
+       autotests/kwordwraptest.cpp
+       src/android/org/kde/guiaddons/KWindowInsetsController.java
+       src/colors/kcolormimedata.cpp
+       src/colors/kcolormimedata.h
+       src/colors/kcolorschemewatcherbackend.cpp
+       src/colors/kcolorschemewatcherbackend.h
+       src/colors/kcolorschemewatcher.cpp
+       src/colors/kcolorschemewatcher.h
+       src/colors/kcolorschemewatcher_mac.h
+       src/colors/kcolorschemewatcher_mac.mm
+       src/colors/kcolorschemewatcher_qt.cpp
+       src/colors/kcolorschemewatcher_qt.h
+       src/colors/kcolorschemewatcher_win.cpp
+       src/colors/kcolorschemewatcher_win.h
+       src/colors/kcolorschemewatcher_xdg.cpp
+       src/colors/kcolorschemewatcher_xdg.h
+       src/colors/kcolorspaces.cpp
+       src/colors/kcolorspaces_p.h
+       src/colors/kcolorutils.cpp
+       src/colors/kcolorutils.h
+       src/colors/kguiaddons_colorhelpers_p.h
+       src/colors/kwindowinsetscontroller.cpp
+       src/colors/kwindowinsetscontroller.h
+       src/geo-scheme-handler/kgeourihandler.cpp
+       src/geo-scheme-handler/kgeourihandler_p.h
+       src/geo-scheme-handler/main.cpp
+       src/qml/types.h
+       src/recorder/kkeysequencerecorder.cpp
+       src/recorder/kkeysequencerecorder.h
+       src/systemclipboard/ksystemclipboard.cpp
+       src/systemclipboard/ksystemclipboard.h
+       src/systemclipboard/qtclipboard.cpp
+       src/systemclipboard/qtclipboard_p.h
+       src/systemclipboard/waylandclipboard.cpp
+       src/systemclipboard/waylandclipboard_p.h
+       src/text/kdatevalidator.cpp
+       src/text/kdatevalidator.h
+       src/text/kwordwrap.cpp
+       src/text/kwordwrap.h
+       src/util/kcursorsaver.cpp
+       src/util/kcursorsaver.h
+       tests/kcolorschemewatchertest.cpp
+Copyright: 2021, Ahmad Samir <a.samirh78@gmail.com>
+           2007, Andreas Hartmetz <ahartmetz@gmail.com>
+           2024, Carl Schwan <carl@carlschwan.eu>
+           2020, David Edmundson <davidedmundson@kde.org>
+           2001-2008, David Faure <faure@kde.org>
+           2020, David Redondo <kde@david-redondo.de>
+           2001-2002, Ellis Whitehead <ellis@kde.org>
+           2007, John Layt <john@layt.net>
+           2005, Joseph Wenninger <jowenn@kde.org>
+           2022, Jyrki Gadinger <nilsding@nilsding.org>
+           2020, Laurent Montel <montel@kde.org>
+           2003, Marc Mutz <mutz@kde.org>
+           1998, Mark Donohoe <donohoe@kde.org>
+           2024, Mathis Brüchert <mbb@kaidan.im>
+           2007, Matthew Woehlke <mw_triad@users.sourceforge.net>
+           1998-2001, Mirko Boehm <mirko@kde.org>
+           2021, Méven Car <meven.car@enioka.com>
+           2021, Nicolas Fella <nicolas.fella@gmx.de>
+           2007, Olaf Schmidt <ojschmidt@kde.org>
+           2020, Piyush Aggarwal <piyushaggarwal002@gmail.com>
+           1999, Steffen Hansen <hansen@kde.org>
+           2007, Thomas Zander <zander@kde.org>
+           1997, Tim D. Gilman <tdgilman@best.org>
+           2021-2024, Volker Krause <vkrause@kde.org>
+           2007, Zack Rusin <zack@kde.org>
+License: LGPL-2.0-or-later
+
+Files: src/systemclipboard/wlr-data-control-unstable-v1.xml
+       src/recorder/keyboard-shortcuts-inhibit-unstable-v1.xml
+Copyright: 2018, Simon Ser
+           2019, Ivan Molodetskikh
+           2017, Red Hat Inc.
+License: MIT
+Comment: Manually collected
+
+Files: debian/*
+Copyright: 2025, Debian Qt/KDE Maintainers <debian-qt-kde@lists.debian.org>
+           2014, Jonathan Riddell <jriddell@ubuntu.com>
+           2024, Patrick Franz <deltaone@debian.org>
+License: LGPL-2.0-or-later
+
+License: BSD-2-Clause
+ Redistribution and use in source and binary forms, with or without
+ modification, are permitted provided that the following conditions
+ are met:
+ .
+ 1. Redistributions of source code must retain the above copyright
+    notice, this list of conditions and the following disclaimer.
+ .
+ 2. Redistributions in binary form must reproduce the above copyright
+    notice, this list of conditions and the following disclaimer in
+    the documentation and/or other materials provided with the
+    distribution.
+ .
+ THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
+ "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
+ LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS
+ FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE
+ COPYRIGHT HOLDER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT,
+ INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING,
+ BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES;
+ LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER
+ CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT
+ LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN
+ ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
+ POSSIBILITY OF SUCH DAMAGE.
+
+License: CC0-1.0
+ To the extent possible under law, the author(s) have dedicated all
+ copyright and related and neighboring rights to this software to the
+ public domain worldwide. This software is distributed without any
+ warranty.
+ .
+ You should have received a copy of the CC0 Public Domain Dedication
+ along with this software. If not, see
+ <https://creativecommons.org/publicdomain/zero/1.0/>.
+ .
+ On Debian systems, the complete text of the CC0 Public Domain
+ Dedication can be found in `/usr/share/common-licenses/CC0-1.0’.
+
+License: GPL-2.0-only
+ This program is free software; you can redistribute it and/or modify
+ it under the terms of the GNU General Public License as published by
+ the Free Software Foundation; version 2.
+ .
+ This program is distributed in the hope that it will be useful, but
+ WITHOUT ANY WARRANTY; without even the implied warranty of
+ MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+ General Public License for more details.
+ .
+ You should have received a copy of the GNU General Public License
+ along with this program. If not, see <http://www.gnu.org/licenses/>.
+ .
+ On Debian systems, the complete text of the GNU General Public
+ License version 2 can be found in
+ `/usr/share/common-licenses/GPL-2’.
+
+License: GPL-2.0-or-later
+ This program is free software; you can redistribute it and/or modify
+ it under the terms of the GNU General Public License as published by
+ the Free Software Foundation; either version 2 of the License, or
+ (at your option) any later version.
+ .
+ This program is distributed in the hope that it will be useful, but
+ WITHOUT ANY WARRANTY; without even the implied warranty of
+ MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+ General Public License for more details.
+ .
+ You should have received a copy of the GNU General Public License
+ along with this program. If not, see <http://www.gnu.org/licenses/>.
+ .
+ On Debian systems, the complete text of the GNU General Public
+ License version 2 can be found in
+ `/usr/share/common-licenses/GPL-2’.
+
+License: GPL-3.0-only
+ This program is free software: you can redistribute it and/or modify
+ it under the terms of the GPL License as published by the Free
+ Software Foundation, version 3.
+ .
+ This package is distributed in the hope that it will be useful, but
+ WITHOUT ANY WARRANTY; without even the implied warranty of
+ MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+ General Public License for more details.
+ .
+ You should have received a copy of the GNU General Public License
+ along with this program. If not, see <http://www.gnu.org/licenses/>.
+ .
+ On Debian systems, the complete text of the GNU General Public
+ License version 3 can be found in
+ `/usr/share/common-licenses/GPL-3’.
+
+License: LGPL-2.0-only
+ This library is free software; you can redistribute it and/or modify
+ it under the terms of the GNU Library General Public License version
+ 2 as published by the Free Software Foundation.
+ .
+ This library is distributed in the hope that it will be useful, but
+ WITHOUT ANY WARRANTY; without even the implied warranty of
+ MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+ Library General Public License for more details.
+ .
+ You should have received a copy of the GNU Library General Public
+ License along with this library. If not, see <http://www.gnu.org/licenses/>.
+ .
+ On Debian systems, the complete text of the GNU Library General
+ Public License version 2 can be found in
+ `/usr/share/common-licenses/LGPL-2’.
+
+License: LGPL-2.0-or-later
+ This library is free software; you can redistribute it and/or modify
+ it under the terms of the GNU Library General Public License as
+ published by the Free Software Foundation; either version 2 of the
+ License, or (at your option)  any later version.
+ .
+ This library is distributed in the hope that it will be useful, but
+ WITHOUT ANY WARRANTY; without even the implied warranty of
+ MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+ Library General Public License for more details.
+ .
+ You should have received a copy of the GNU Library General Public
+ License along with this library. If not, see <http://www.gnu.org/licenses/>.
+ .
+ On Debian systems, the complete text of the GNU Library General
+ Public License version 2 can be found in
+ `/usr/share/common-licenses/LGPL-2’.
+
+License: LGPL-2.1-only
+ This library is free software; you can redistribute it and/or modify
+ it under the terms of the GNU Lesser General Public License version
+ 2.1 as published by the Free Software Foundation.
+ .
+ This library is distributed in the hope that it will be useful, but
+ WITHOUT ANY WARRANTY; without even the implied warranty of
+ MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+ Lesser General Public License for more details.
+ .
+ You should have received a copy of the GNU Lesser General Public
+ License along with this library. If not, see <http://www.gnu.org/licenses/>.
+ .
+ On Debian systems, the complete text of the GNU Lesser General
+ Public License version 2.1 can be found in
+ `/usr/share/common-licenses/LGPL-2.1’.
+
+License: LGPL-3.0-only
+ This library is free software; you can redistribute it and/or modify
+ it under the terms of the GNU Lesser General Public License version
+ 3 as published by the Free Software Foundation.
+ .
+ This library is distributed in the hope that it will be useful, but
+ WITHOUT ANY WARRANTY; without even the implied warranty of
+ MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+ Lesser General Public License for more details.
+ .
+ You should have received a copy of the GNU Lesser General Public
+ License along with this library.  If not, see
+ <http://www.gnu.org/licenses/>.
+ .
+ On Debian systems, the complete text of the GNU Lesser General
+ Public License version 3 can be found in
+ `/usr/share/common-licenses/LGPL-3’.
+
+License: LicenseRef-KDE-Accepted-GPL
+ This library is free software; you can redistribute it and/or modify
+ it under the terms of the GNU General Public License as published by
+ the Free Software Foundation; either version 3 of the license or (at
+ your option) at any later version that is accepted by the membership
+ of KDE e.V. (or its successor approved by the membership of KDE
+ e.V.), which shall act as a proxy as defined in Section 14 of
+ version 3 of the license.
+ .
+ This program is distributed in the hope that it will be useful, but
+ WITHOUT ANY WARRANTY; without even the implied warranty of
+ MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+ General Public License for more details.
+
+License: LicenseRef-KDE-Accepted-LGPL
+ This library is free software; you can redistribute it and/or modify
+ it under the terms of the GNU Lesser General Public License as
+ published by the Free Software Foundation; either version 3 of the
+ license or (at your option) any later version that is accepted by
+ the membership of KDE e.V. (or its successor approved by the
+ membership of KDE e.V.), which shall act as a proxy as defined in
+ Section 6 of version 3 of the license.
+ .
+ This program is distributed in the hope that it will be useful, but
+ WITHOUT ANY WARRANTY; without even the implied warranty of
+ MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+ General Public License for more details.
+
+License: MIT
+ Permission is hereby granted, free of charge, to any person
+ obtaining a copy of this software and associated documentation files
+ (the "Software"), to deal in the Software without restriction,
+ including without limitation the rights to use, copy, modify, merge,
+ publish, distribute, sublicense, and/or sell copies of the Software,
+ and to permit persons to whom the Software is furnished to do so,
+ subject to the following conditions:
+ .
+ The above copyright notice and this permission notice shall be
+ included in all copies or substantial portions of the Software.
+ .
+ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
+ EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF
+ MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND
+ NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS
+ BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN
+ ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN
+ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+ SOFTWARE.

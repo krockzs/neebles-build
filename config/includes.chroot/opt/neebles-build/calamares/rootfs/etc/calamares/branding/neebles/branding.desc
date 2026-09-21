@@ -1,0 +1,40 @@
+---
+componentName: neebles
+
+welcomeStyleCalamares: false
+welcomeExpandingLogo: true
+windowExpanding: normal
+windowSize: 800px,580px
+windowPlacement: center
+
+strings:
+  productName: "N.E.E.B.L.E.S. OS"
+  shortProductName: "N.E.E.B.L.E.S."
+  version: "1.0.2"
+  shortVersion: "1.0.2"
+  versionedName: "N.E.E.B.L.E.S. OS 1.0.2"
+  shortVersionedName: "N.E.E.B.L.E.S. 1.0.2"
+  bootloaderEntryName: "N.E.E.B.L.E.S."
+  productUrl: ""
+  supportUrl: ""
+  knownIssuesUrl: ""
+  releaseNotesUrl: ""
+  donateUrl: ""
+
+sidebar: widget
+navigation: widget
+
+images:
+  productLogo: "neebles-logo.png"
+  productIcon: "neebles-logo.png"
+  productWelcome: "welcome.png"
+
+slideshow: "show.qml"
+
+style:
+  SidebarBackground: "#000000"
+  SidebarText: "#F5F5F5"
+  SidebarTextCurrent: "#FFFFFF"
+  SidebarBackgroundCurrent: "#7C3AED"
+
+slideshowAPI: 2

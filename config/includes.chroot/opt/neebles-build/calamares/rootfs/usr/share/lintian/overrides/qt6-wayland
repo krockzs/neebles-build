@@ -1,0 +1,4 @@
+# those are private libs installed in a public path
+qt6-wayland: package-name-doesnt-match-sonames libQt6WaylandEglClientHwIntegration6 libQt6WaylandEglCompositorHwIntegration6
+qt6-wayland: no-symbols-control-file usr/lib/*/libQt6WaylandEglClientHwIntegration.so.6.*
+qt6-wayland: no-symbols-control-file usr/lib/*/libQt6WaylandEglCompositorHwIntegration.so.6.*

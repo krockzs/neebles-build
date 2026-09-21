@@ -1,0 +1,18 @@
+# Lenovo Yoga 9 14IAP7
+
+# sysinfo.ZNsVJXAt44.tar.gz
+# https://github.com/linuxwacom/wacom-hid-descriptors/issues/227
+
+[Device]
+Name=Wacom HID 52C2
+ModelName=WACF2200
+DeviceMatch=i2c|056a|52c2
+Class=ISDV4
+Width=12
+Height=7
+IntegratedIn=Display;System
+Styli=@isdv4-aes
+
+[Features]
+Stylus=true
+Touch=true

@@ -13,10 +13,10 @@ if [ -f /usr/bin/lxsession ]; then
 Type=Link
 Name=Install NEEBLES
 Icon=neebles-install
-URL=/usr/share/applications/calamares-install-debian.desktop
+URL=/usr/share/applications/neebles-installer.desktop
 EODESKTOP
 else
-    cp /usr/share/applications/calamares-install-debian.desktop \
+    cp /usr/share/applications/neebles-installer.desktop \
        "$DESKTOP/neebles-install.desktop"
 
     chmod +x "$DESKTOP/neebles-install.desktop"
@@ -33,8 +33,3 @@ if [ "$XDG_CURRENT_DESKTOP" = "XFCE" ]; then
     touch "$DESKTOP/neebles-install.desktop"
 fi
 
-ionice -c 3 cat /usr/bin/calamares > /dev/null 2>&1
-
-for file in $(ldd /usr/bin/calamares | awk '{print $3}'); do
-    [ -f "$file" ] && ionice -c 3 cat "$file" > /dev/null 2>&1
-done
