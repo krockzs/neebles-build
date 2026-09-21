@@ -3,6 +3,7 @@
 import hashlib
 import json
 import os
+import socket
 import stat
 import sys
 import urllib.error
@@ -33,6 +34,8 @@ BRANCH_CANDIDATES = [
 
 TIMEOUT = 12
 MAX_DIFFERENCE_PATHS = 100
+HELPER_SOCKET = "/run/neebles-check.sock"
+HELPER_TIMEOUT = 180
 
 
 def sha256_file(path):
@@ -273,14 +276,114 @@ def local_inventory(root, roots):
     return result
 
 
+def privileged_inventory(local_root):
+    component = None
+
+    for name, config in COMPONENTS.items():
+        if Path(config["local"]) == Path(local_root):
+            component = name
+            break
+
+    if component is None:
+        raise PermissionError(
+            "privileged helper does not allow this path"
+        )
+
+    try:
+        with socket.socket(
+            socket.AF_UNIX,
+            socket.SOCK_STREAM,
+        ) as client:
+            client.settimeout(
+                HELPER_TIMEOUT
+            )
+
+            client.connect(
+                HELPER_SOCKET
+            )
+
+            client.sendall(
+                (
+                    component
+                    + "\n"
+                ).encode(
+                    "utf-8"
+                )
+            )
+
+            chunks = []
+
+            while True:
+                chunk = client.recv(
+                    1024 * 1024
+                )
+
+                if not chunk:
+                    break
+
+                chunks.append(
+                    chunk
+                )
+
+    except OSError as error:
+        raise PermissionError(
+            "privileged helper unavailable: "
+            + str(error)
+        ) from error
+
+    try:
+        payload = json.loads(
+            b"".join(
+                chunks
+            ).decode(
+                "utf-8"
+            )
+        )
+    except Exception as error:
+        raise PermissionError(
+            "invalid privileged helper response: "
+            + str(error)
+        ) from error
+
+    if payload.get("ok") is not True:
+        raise PermissionError(
+            "privileged helper rejected request"
+        )
+
+    if payload.get("operation") != component:
+        raise PermissionError(
+            "privileged helper operation mismatch"
+        )
+
+    inventory = payload.get(
+        "inventory"
+    )
+
+    if not isinstance(
+        inventory,
+        dict,
+    ):
+        raise PermissionError(
+            "privileged helper returned invalid inventory"
+        )
+
+    return inventory
+
+
 def compare_manifest(local_root, normalized):
     expected = normalized["entries"]
     roots = contract_roots(expected)
 
-    actual = local_inventory(
-        local_root,
-        roots,
-    )
+    try:
+        actual = local_inventory(
+            local_root,
+            roots,
+        )
+
+    except PermissionError:
+        actual = privileged_inventory(
+            local_root
+        )
 
     expected_paths = set(expected)
     actual_paths = set(actual)
@@ -321,6 +424,7 @@ def compare_manifest(local_root, normalized):
             len(missing) > MAX_DIFFERENCE_PATHS
             or len(extra) > MAX_DIFFERENCE_PATHS
             or len(different) > MAX_DIFFERENCE_PATHS
+
         ),
     }
 
@@ -386,10 +490,17 @@ def check_component(component):
     result["current_version"] = current["version"]
     result["old_version"] = old["version"]
 
-    current_compare = compare_manifest(
-        local_root,
-        current,
-    )
+    try:
+        current_compare = compare_manifest(
+            local_root,
+            current,
+        )
+
+    except PermissionError as error:
+        result["valid"] = None
+        result["status"] = "permission_denied_requires_root"
+        result["local_error"] = str(error)
+        return result
 
     if current_compare["valid"]:
         result["valid"] = True
@@ -399,10 +510,17 @@ def check_component(component):
         result["comparison"] = current_compare
         return result
 
-    old_compare = compare_manifest(
-        local_root,
-        old,
-    )
+    try:
+        old_compare = compare_manifest(
+            local_root,
+            old,
+        )
+
+    except PermissionError as error:
+        result["valid"] = None
+        result["status"] = "permission_denied_requires_root"
+        result["local_error"] = str(error)
+        return result
 
     if old_compare["valid"]:
         result["valid"] = True
@@ -449,6 +567,12 @@ def overall_status(results):
     ):
         return "unverified_remote_unavailable"
 
+    if any(
+        status == "permission_denied_requires_root"
+        for status in statuses
+    ):
+        return "permission_denied_requires_root"
+
     return "partially_unverified"
 
 
@@ -458,6 +582,12 @@ def exit_code(results):
         for item in results
     ):
         return 1
+
+    if any(
+        item["status"] == "permission_denied_requires_root"
+        for item in results
+    ):
+        return 2
 
     return 0
 

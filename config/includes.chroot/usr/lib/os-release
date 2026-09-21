@@ -1,7 +1,7 @@
-PRETTY_NAME="N.E.E.B.L.E.S. OS 1.0.2"
+PRETTY_NAME="N.E.E.B.L.E.S. OS 1.0.3"
 NAME="N.E.E.B.L.E.S. OS"
 VERSION_ID="13"
-VERSION="1.0.2 (Trixie)"
+VERSION="1.0.3 (Trixie)"
 VERSION_CODENAME=trixie
 ID=debian
 ID_LIKE=debian
@@ -9,5 +9,5 @@ HOME_URL="https://www.entropiagames.cl"
 SUPPORT_URL="https://www.entropiagames.cl"
 BUG_REPORT_URL="https://www.entropiagames.cl"
 LOGO=neebles
-NEEBLES_VERSION="1.0.2"
+NEEBLES_VERSION="1.0.3"
 NEEBLES_AUTHORS="Olate Stark and Jarvis"

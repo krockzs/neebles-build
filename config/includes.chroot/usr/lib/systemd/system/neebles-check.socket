@@ -1,0 +1,11 @@
+[Unit]
+Description=NEEBLES Check privileged inventory socket
+
+[Socket]
+ListenStream=/run/neebles-check.sock
+SocketMode=0666
+Accept=yes
+RemoveOnStop=yes
+
+[Install]
+WantedBy=sockets.target

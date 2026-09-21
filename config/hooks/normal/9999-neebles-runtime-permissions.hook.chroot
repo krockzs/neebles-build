@@ -1,0 +1,38 @@
+#!/bin/sh
+set -eu
+
+chmod 775 /opt/neebles-build/boss/packages
+chmod 664 /opt/neebles-build/boss/packages/SHA256SUMS
+chmod 1777 /opt/neebles-build/boss/rootfs/tmp
+chmod 2755 /opt/neebles-build/boss/rootfs/usr/bin/chage
+chmod 4755 /opt/neebles-build/boss/rootfs/usr/bin/chfn
+chmod 4755 /opt/neebles-build/boss/rootfs/usr/bin/chsh
+chmod 2755 /opt/neebles-build/boss/rootfs/usr/bin/expiry
+chmod 4755 /opt/neebles-build/boss/rootfs/usr/bin/gpasswd
+chmod 4755 /opt/neebles-build/boss/rootfs/usr/bin/mount
+chmod 4755 /opt/neebles-build/boss/rootfs/usr/bin/passwd
+chmod 4755 /opt/neebles-build/boss/rootfs/usr/bin/su
+chmod 4755 /opt/neebles-build/boss/rootfs/usr/bin/sudo
+chmod 4755 /opt/neebles-build/boss/rootfs/usr/bin/umount
+chmod 2755 /opt/neebles-build/boss/rootfs/usr/sbin/unix_chkpwd
+chmod 1777 /opt/neebles-build/boss/rootfs/var/lock
+chmod 1777 /opt/neebles-build/boss/rootfs/var/tmp
+
+chmod 775 /opt/neebles-build/calamares/packages
+chmod 664 /opt/neebles-build/calamares/packages/SHA256SUMS
+chmod 1777 /opt/neebles-build/calamares/rootfs/tmp
+chmod 2755 /opt/neebles-build/calamares/rootfs/usr/bin/chage
+chmod 4755 /opt/neebles-build/calamares/rootfs/usr/bin/chfn
+chmod 4755 /opt/neebles-build/calamares/rootfs/usr/bin/chsh
+chmod 2755 /opt/neebles-build/calamares/rootfs/usr/bin/expiry
+chmod 4755 /opt/neebles-build/calamares/rootfs/usr/bin/gpasswd
+chmod 4755 /opt/neebles-build/calamares/rootfs/usr/bin/mount
+chmod 4755 /opt/neebles-build/calamares/rootfs/usr/bin/ntfs-3g
+chmod 4755 /opt/neebles-build/calamares/rootfs/usr/bin/passwd
+chmod 4755 /opt/neebles-build/calamares/rootfs/usr/bin/su
+chmod 4755 /opt/neebles-build/calamares/rootfs/usr/bin/sudo
+chmod 4755 /opt/neebles-build/calamares/rootfs/usr/bin/umount
+chmod 775 /opt/neebles-build/calamares/rootfs/usr/lib/neebles
+chmod 2755 /opt/neebles-build/calamares/rootfs/usr/sbin/unix_chkpwd
+chmod 1777 /opt/neebles-build/calamares/rootfs/var/lock
+chmod 1777 /opt/neebles-build/calamares/rootfs/var/tmp
