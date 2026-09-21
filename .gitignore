@@ -27,3 +27,4 @@ build-tools/calamares-partition-build/
 # Local Calamares source/build workspace
 # Modified source is maintained separately in krockzs/neebles-calamares
 build-tools/
+neebles-os-amd64.hybrid.iso.sha256
