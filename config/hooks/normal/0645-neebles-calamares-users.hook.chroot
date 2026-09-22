@@ -1,0 +1,38 @@
+#!/bin/sh
+set -eu
+
+python3 - <<'PYINNER'
+from pathlib import Path
+
+path = Path("/etc/calamares/modules/users.conf")
+
+if not path.is_file():
+    raise SystemExit(
+        "FATAL: falta /etc/calamares/modules/users.conf"
+    )
+
+text = path.read_text()
+
+if "dictcheck=0" in text:
+    print("OK: dictcheck=0 ya presente")
+    raise SystemExit(0)
+
+needle = "        - minclass=0"
+
+count = text.count(needle)
+
+if count != 1:
+    raise SystemExit(
+        "FATAL: esperaba exactamente un minclass=0, encontrados: "
+        + str(count)
+    )
+
+text = text.replace(
+    needle,
+    needle + "\n        - dictcheck=0"
+)
+
+path.write_text(text)
+
+print("OK: agregado dictcheck=0 a users.conf exterior")
+PYINNER

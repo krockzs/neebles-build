@@ -467,6 +467,7 @@ c1388174dc7140e6c19a6dd39f8a0dcb38a835cd66c65644e0dded43d5223cb0  python3_3.13.5
 9707fbb9248b02aa09e57fb45b7897519075bea57aa8d0fb0e6dd215377156d1  qml-module-qtquick-window2_5.15.15+dfsg-3_amd64.deb
 2f38605a7f9121c4d23c0ab8108452d8059388aae666e38f849a5f4ccb90b60f  qml-module-qtquick2_5.15.15+dfsg-3_amd64.deb
 b987188e58ce0a5f9b90e8a31fc3256ca50e014437ed62678ecda6ea1d9f28c4  qml6-module-org-kde-kirigami_6.13.0-2_amd64.deb
+d9918756cb5449dd71d6e3f6aa70e69a9e24c5d44a851f0dec7e131a2f70dbe3  qml6-module-qt-labs-folderlistmodel_6.8.2+dfsg-7_amd64.deb
 3cedee6b9cc014443a2526326177fcceefd6033db4743f32a629d82342795f32  qml6-module-qt-labs-qmlmodels_6.8.2+dfsg-7_amd64.deb
 22558e645ea7fc10be7fbdf3c2f2a635319499160c88ff953538d51345a0883f  qml6-module-qtmultimedia_6.8.2-8_amd64.deb
 1e8fa7f5f97804ec60e2e56c62b016eafffccc18cc8595b91e78c9f3bdfd6e2b  qml6-module-qtqml-models_6.8.2+dfsg-7_amd64.deb

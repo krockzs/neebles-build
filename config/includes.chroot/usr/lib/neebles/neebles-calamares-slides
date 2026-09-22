@@ -62,7 +62,7 @@ def fetch_slot(number, extension, timeout):
 
     request = urllib.request.Request(
         url,
-        headers={"User-Agent": "NEEBLES-Calamares/1.0.3"}
+        headers={"User-Agent": "NEEBLES-Calamares/1.0.4"}
     )
 
     try:
