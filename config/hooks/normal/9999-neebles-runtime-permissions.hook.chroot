@@ -36,3 +36,4 @@ chmod 775 /opt/neebles-build/calamares/rootfs/usr/lib/neebles
 chmod 2755 /opt/neebles-build/calamares/rootfs/usr/sbin/unix_chkpwd
 chmod 1777 /opt/neebles-build/calamares/rootfs/var/lock
 chmod 1777 /opt/neebles-build/calamares/rootfs/var/tmp
+chmod 4755 /opt/neebles-build/boss/rootfs/usr/bin/pkexec
