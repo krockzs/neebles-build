@@ -1,0 +1,62 @@
+{
+  "schema": 1,
+  "artifacts": {
+    "busybox": {
+      "path": "rootfs/usr/bin/busybox",
+      "sha256": "7ae95c260622412ceba6eb9f45d68f616cdc091a1d71d6c0a08b5875bb2c31dd",
+      "package": "packages/busybox-static_1.37.0-6+b9_amd64.deb",
+      "package_sha256": "598a3fd92bdafc34cd81196b2952ad36e910e47a4ecf162f8ce5e8e262598e53"
+    }
+  },
+  "tools": {
+    "copy": {
+      "artifact": "busybox",
+      "applet": "cp",
+      "host": "/usr/bin/cp"
+    },
+    "move": {
+      "artifact": "busybox",
+      "applet": "mv",
+      "host": "/usr/bin/mv"
+    },
+    "remove": {
+      "artifact": "busybox",
+      "applet": "rm",
+      "host": "/usr/bin/rm"
+    },
+    "chmod": {
+      "artifact": "busybox",
+      "applet": "chmod",
+      "host": "/usr/bin/chmod"
+    },
+    "mkdir": {
+      "artifact": "busybox",
+      "applet": "mkdir",
+      "host": "/usr/bin/mkdir"
+    },
+    "link": {
+      "artifact": "busybox",
+      "applet": "ln",
+      "host": "/usr/bin/ln"
+    }
+  },
+  "systemctl": {
+    "path": "rootfs/usr/bin/systemctl",
+    "sha256": "848c70d7e2c2f43f4f93287897ac8946e8eda45e7daa5f2975d9728071856b1a",
+    "loader": {
+      "path": "rootfs/usr/lib64/ld-linux-x86-64.so.2",
+      "sha256": "c8438e4fde1934e61c88311633f00949ff645d5c04cdb8671fa3d78164d2f307"
+    },
+    "libraries": [
+      {
+        "path": "rootfs/usr/lib/x86_64-linux-gnu/systemd/libsystemd-shared-257.so",
+        "sha256": "9f6f06ff4883d23eee5e628c625878e8bc7f60613e945e04ead7793ae969f37c"
+      }
+    ],
+    "library_paths": [
+      "rootfs/usr/lib/x86_64-linux-gnu",
+      "rootfs/usr/lib/x86_64-linux-gnu/systemd"
+    ],
+    "host": "/usr/bin/systemctl"
+  }
+}
