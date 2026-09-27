@@ -1,0 +1,6 @@
+{
+  "schema": "1",
+  "name": "neebles-writable-data-authority",
+  "authority": "boss.modules.install_staging",
+  "root": "/opt/neebles/shared/tmp"
+}

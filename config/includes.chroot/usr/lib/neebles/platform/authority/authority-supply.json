@@ -1,0 +1,22 @@
+{
+  "schema": "1",
+  "name": "neebles-authority-supply",
+  "entries": [
+    {
+      "authority": "platform.filesystem_boundary",
+      "location": "/usr/lib/neebles/platform/authority/platform.filesystem_boundary.json"
+    },
+    {
+      "authority": "system.dns_resolver_config",
+      "location": "/usr/lib/neebles/platform/authority/system.dns_resolver_config.json"
+    },
+    {
+      "authority": "boss.modules.install_staging",
+      "location": "/usr/lib/neebles/platform/authority/boss.modules.install_staging.json"
+    },
+    {
+      "authority": "boss.modules.update_staging",
+      "location": "/usr/lib/neebles/platform/authority/boss.modules.update_staging.json"
+    }
+  ]
+}

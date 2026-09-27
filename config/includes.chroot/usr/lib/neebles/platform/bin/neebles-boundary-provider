@@ -1,0 +1,246 @@
+#!/usr/bin/env python3
+
+from pathlib import Path
+import shutil
+import subprocess
+import sys
+import tempfile
+
+BACKEND = Path("/usr/bin/bwrap")
+
+def fail(message):
+    print("neebles-boundary-provider: " + message, file=sys.stderr)
+    raise SystemExit(64)
+
+def clean_absolute(value, label):
+    path = Path(value)
+
+    if not path.is_absolute():
+        fail(label + " must be absolute: " + value)
+
+    if ".." in path.parts:
+        fail(label + " cannot contain parent traversal: " + value)
+
+    return path
+
+def main():
+    arguments = sys.argv[1:]
+    root = None
+    readonly = []
+    writable = []
+    mount_proc = False
+    mount_dev = False
+    mount_tmp = False
+    chdir = None
+    command = None
+    index = 0
+
+    while index < len(arguments):
+        value = arguments[index]
+
+        if value == "--":
+            command = arguments[index + 1:]
+            break
+
+        if value == "--root":
+            if index + 1 >= len(arguments):
+                fail("missing value for --root")
+            root = clean_absolute(arguments[index + 1], "root")
+            index += 2
+            continue
+
+        if value in ("--readonly-data", "--writable-data"):
+            if index + 2 >= len(arguments):
+                fail("missing values for " + value)
+
+            source = clean_absolute(arguments[index + 1], value + " source")
+            destination = clean_absolute(arguments[index + 2], value + " destination")
+
+            if value == "--readonly-data":
+                readonly.append((source, destination))
+            else:
+                writable.append((source, destination))
+
+            index += 3
+            continue
+
+        if value == "--proc":
+            mount_proc = True
+            index += 1
+            continue
+
+        if value == "--dev":
+            mount_dev = True
+            index += 1
+            continue
+
+        if value == "--tmp":
+            mount_tmp = True
+            index += 1
+            continue
+
+        if value == "--chdir":
+            if index + 1 >= len(arguments):
+                fail("missing value for --chdir")
+            chdir = clean_absolute(arguments[index + 1], "chdir")
+            index += 2
+            continue
+
+        fail("unknown protocol argument: " + value)
+
+    if root is None:
+        fail("missing --root")
+
+    if not root.is_dir():
+        fail("root is not a directory: " + str(root))
+
+    if not command:
+        fail("missing command after --")
+
+    if not BACKEND.is_file():
+        fail("boundary backend missing: " + str(BACKEND))
+
+    destinations = set()
+
+    for mode, grants in [("readonly-data", readonly), ("writable-data", writable)]:
+        for source, destination in grants:
+            if not source.exists():
+                fail(mode + " source missing: " + str(source))
+
+            key = str(destination)
+
+            if key in destinations:
+                fail("duplicate external data destination: " + key)
+
+            destinations.add(key)
+
+    with tempfile.TemporaryDirectory(prefix="neebles-boundary-provider-") as temporary:
+        temporary_root = Path(temporary)
+        staged_tops = {}
+
+        for source, destination in readonly + writable:
+            inside = root / destination.relative_to("/")
+
+            if inside.exists():
+                continue
+
+            parts = destination.parts
+
+            if len(parts) < 2:
+                fail("external data destination cannot be root")
+
+            top_name = parts[1]
+
+            if top_name not in staged_tops:
+                source_top = root / top_name
+                staged_top = temporary_root / top_name
+
+                if source_top.is_dir():
+                    shutil.copytree(source_top, staged_top, symlinks=True)
+                else:
+                    staged_top.mkdir(parents=True, exist_ok=True)
+
+                staged_tops[top_name] = staged_top
+
+            staged_destination = staged_tops[top_name] / Path(*parts[2:])
+            staged_destination.parent.mkdir(parents=True, exist_ok=True)
+
+            if not staged_destination.exists():
+                if source.is_dir():
+                    staged_destination.mkdir(parents=True, exist_ok=True)
+                else:
+                    staged_destination.touch()
+
+        required_top_levels = set(
+            staged_tops.keys()
+        )
+
+        for source, destination in readonly + writable:
+            parts = destination.parts
+
+            if len(parts) >= 2:
+                required_top_levels.add(
+                    parts[1]
+                )
+
+        missing_top_levels = sorted(
+            top_name
+            for top_name in required_top_levels
+            if not (
+                root
+                / top_name
+            ).exists()
+        )
+
+        if missing_top_levels:
+            backend_args = [
+                str(BACKEND),
+                "--tmpfs",
+                "/",
+            ]
+
+            for root_entry in sorted(
+                root.iterdir(),
+                key=lambda path: path.name,
+            ):
+                backend_args.extend(
+                    [
+                        "--ro-bind",
+                        str(root_entry),
+                        "/"
+                        + root_entry.name,
+                    ]
+                )
+
+            for top_name in missing_top_levels:
+                backend_args.extend(
+                    [
+                        "--dir",
+                        "/"
+                        + top_name,
+                    ]
+                )
+        else:
+            backend_args = [
+                str(BACKEND),
+                "--ro-bind",
+                str(root),
+                "/",
+            ]
+
+        for top_name, staged_top in sorted(staged_tops.items()):
+            backend_args.extend(
+                [
+                    "--ro-bind",
+                    str(staged_top),
+                    "/"
+                    + top_name,
+                ]
+            )
+
+        if mount_proc:
+            backend_args.extend(["--proc", "/proc"])
+
+        if mount_dev:
+            backend_args.extend(["--dev", "/dev"])
+
+        if mount_tmp:
+            backend_args.extend(["--tmpfs", "/tmp"])
+
+        for source, destination in readonly:
+            backend_args.extend(["--ro-bind", str(source), str(destination)])
+
+        for source, destination in writable:
+            backend_args.extend(["--bind", str(source), str(destination)])
+
+        backend_args.append("--clearenv")
+
+        if chdir is not None:
+            backend_args.extend(["--chdir", str(chdir)])
+
+        backend_args.extend(command)
+        result = subprocess.run(backend_args)
+        raise SystemExit(result.returncode)
+
+if __name__ == "__main__":
+    main()

@@ -1,0 +1,8 @@
+{
+  "schema": "1",
+  "name": "neebles-external-data-authority",
+  "authority": "system.dns_resolver_config",
+  "source": "/etc/resolv.conf",
+  "destination": "/etc/resolv.conf",
+  "access": "read_only"
+}

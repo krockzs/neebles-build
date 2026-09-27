@@ -28,3 +28,6 @@ build-tools/calamares-partition-build/
 # Modified source is maintained separately in krockzs/neebles-calamares
 build-tools/
 neebles-os-amd64.hybrid.iso.sha256
+
+# Local generated state
+/scripts/__pycache__/

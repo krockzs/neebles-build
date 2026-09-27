@@ -27,3 +27,4 @@ fastfetch
 kwin-x11
 qml6-module-qt-labs-folderlistmodel
 systemd-timesyncd
+bubblewrap

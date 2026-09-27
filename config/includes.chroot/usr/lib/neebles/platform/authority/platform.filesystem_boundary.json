@@ -1,0 +1,7 @@
+{
+  "schema": "1",
+  "name": "neebles-platform-authority",
+  "authority": "platform.filesystem_boundary",
+  "protocol": "neebles-filesystem-boundary-v1",
+  "provider": "/usr/lib/neebles/platform/bin/neebles-boundary-provider"
+}
