@@ -11,6 +11,7 @@ EXPECTED_AUTHORITY_FILES = {
     "authority-supply.json",
     "boss.modules.install_staging.json",
     "boss.modules.update_staging.json",
+    "neebles.domestic_workspace.json",
     "platform.filesystem_boundary.json",
     "platform.desktop_session_interface.json",
     "system.dns_resolver_config.json",
@@ -50,6 +51,10 @@ EXPECTED_SUPPLY = {
         {
             "authority": "boss.modules.update_staging",
             "location": "/usr/lib/neebles/platform/authority/boss.modules.update_staging.json",
+        },
+        {
+            "authority": "neebles.domestic_workspace",
+            "location": "/usr/lib/neebles/platform/authority/neebles.domestic_workspace.json",
         },
         {
             "authority": "platform.desktop_session_interface",
@@ -95,6 +100,12 @@ EXPECTED_WRITABLE = {
         "name": "neebles-writable-data-authority",
         "authority": "boss.modules.update_staging",
         "root": "/opt/neebles/modules",
+    },
+    "neebles.domestic_workspace.json": {
+        "schema": "1",
+        "name": "neebles-writable-data-authority",
+        "authority": "neebles.domestic_workspace",
+        "root": "/opt/neebles-build",
     },
 }
 

@@ -29,6 +29,10 @@ ROOTS = {
     "rootfs",
 }
 
+MODULE_ROOT = Path(
+    "/opt/neebles-build/modules"
+)
+
 BOSS_CORPUS = Path(
     "/opt/neebles-build/boss"
 )
@@ -465,6 +469,21 @@ def inventory(module, component):
     }
 
 
+
+def module_inventory(module, paths):
+    if not MODULE_ROOT.is_dir():
+        return {
+            'present': False,
+            'inventory': {},
+        }
+
+    return {
+        'present': True,
+        'inventory': module.selected_inventory(
+            MODULE_ROOT,
+            paths,
+        ),
+    }
 
 def path_present(path):
     return (
@@ -2217,6 +2236,50 @@ def main():
                     "present": data["present"],
                     "inventory": data["inventory"],
                 }
+
+    elif operation == 'module-inventory':
+        module = load_checker()
+
+        if not isinstance(payload, dict):
+            result = {
+                'ok': False,
+                'operation': operation,
+                'error': 'invalid_module_inventory_payload',
+            }
+        else:
+            paths = payload.get('paths')
+
+            if (
+                not isinstance(paths, list)
+                or len(paths) > 100000
+                or any(
+                    not isinstance(path, str)
+                    for path in paths
+                )
+            ):
+                result = {
+                    'ok': False,
+                    'operation': operation,
+                    'error': 'invalid_module_inventory_paths',
+                }
+            else:
+                try:
+                    data = module_inventory(
+                        module,
+                        paths,
+                    )
+                    result = {
+                        'ok': True,
+                        'operation': operation,
+                        'present': data['present'],
+                        'inventory': data['inventory'],
+                    }
+                except Exception as error:
+                    result = {
+                        'ok': False,
+                        'operation': operation,
+                        'error': str(error),
+                    }
 
     elif operation == "restore-read-boss-identity":
         result = read_boss_identity()

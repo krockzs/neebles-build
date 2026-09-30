@@ -37,3 +37,15 @@ chmod 2755 /opt/neebles-build/calamares/rootfs/usr/sbin/unix_chkpwd
 chmod 1777 /opt/neebles-build/calamares/rootfs/var/lock
 chmod 1777 /opt/neebles-build/calamares/rootfs/var/tmp
 chmod 4755 /opt/neebles-build/boss/rootfs/usr/bin/pkexec
+
+# NEEBLES Modules shared runtime territory
+install -d -o root -g root -m 0755 /opt/neebles-build/modules
+install -d -o root -g root -m 0775 /opt/neebles-build/modules/packages
+install -d -o root -g root -m 0755 /opt/neebles-build/modules/rootfs
+
+# NEEBLES domestic construction declarations
+install -d -o root -g root -m 0755 /usr/lib/neebles/domestic
+install -d -o root -g root -m 0755 /usr/lib/neebles/domestic/construction
+rm -f /usr/lib/neebles/domestic/construction/.gitkeep
+find /usr/lib/neebles/domestic/construction -maxdepth 1 -type f -name '*.json' -exec chown root:root {} ;
+find /usr/lib/neebles/domestic/construction -maxdepth 1 -type f -name '*.json' -exec chmod 0644 {} ;

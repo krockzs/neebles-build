@@ -594,6 +594,23 @@ def fetch_json(url):
     )
 
 
+def fetch_text(url):
+    request = urllib.request.Request(
+        url,
+        headers={
+            'User-Agent': 'NEEBLES-Check/1.0',
+            'Accept': 'text/plain',
+        },
+    )
+
+    with urllib.request.urlopen(
+        request,
+        timeout=TIMEOUT,
+    ) as response:
+        payload = response.read()
+
+    return payload.decode('utf-8')
+
 def detect_default_branch():
     url = (
         "https://api.github.com/repos/"
@@ -721,6 +738,36 @@ def validate_manifest(manifest, component):
     }
 
 
+def validate_module_manifest(manifest, module_id):
+    if not isinstance(manifest, dict):
+        raise ValueError('module manifest is not an object')
+
+    if manifest.get('module') != module_id:
+        raise ValueError('module identity mismatch')
+
+    adapted = dict(manifest)
+    adapted['component'] = module_id
+
+    normalized = validate_manifest(
+        adapted,
+        module_id,
+    )
+
+    for path in normalized['entries']:
+        parts = Path(path).parts
+
+        if len(parts) < 2:
+            raise ValueError(
+                'module manifest cannot own shared pool root'
+            )
+
+        if parts[0] not in {'packages', 'rootfs'}:
+            raise ValueError(
+                'module manifest path outside shared pool'
+            )
+
+    return normalized
+
 def contract_roots(entries):
     roots = set()
 
@@ -781,6 +828,92 @@ def local_inventory(root, roots):
 
     return result
 
+
+def selected_inventory(root, paths):
+    result = {}
+
+    if not root.is_dir():
+        return result
+
+    for relative in sorted(set(paths)):
+        if not isinstance(relative, str) or not relative:
+            raise ValueError('invalid selected path')
+
+        relative_path = Path(relative)
+
+        if relative_path.is_absolute():
+            raise ValueError('absolute selected path')
+
+        if '..' in relative_path.parts:
+            raise ValueError('parent traversal in selected path')
+
+        current = root
+        unavailable = False
+
+        for part in relative_path.parts[:-1]:
+            current = current / part
+
+            try:
+                metadata = current.lstat()
+            except FileNotFoundError:
+                unavailable = True
+                break
+
+            if stat.S_ISLNK(metadata.st_mode):
+                raise PermissionError(
+                    'symlink ancestor in selected path'
+                )
+
+            if not stat.S_ISDIR(metadata.st_mode):
+                unavailable = True
+                break
+
+        if unavailable:
+            continue
+
+        path = root / relative_path
+
+        try:
+            metadata = path.lstat()
+        except FileNotFoundError:
+            continue
+
+        kind = entry_type(path)
+
+        item = {
+            'path': relative,
+            'type': kind,
+            'mode': oct(
+                stat.S_IMODE(metadata.st_mode)
+            ),
+        }
+
+        if kind == 'file':
+            item['size'] = metadata.st_size
+            item['sha256'] = sha256_file(path)
+
+        elif kind == 'symlink':
+            item['target'] = os.readlink(path)
+
+        result[relative] = item
+
+    return result
+
+
+def privileged_module_inventory(paths):
+    response = helper_request(
+        'module-inventory',
+        {'paths': sorted(set(paths))},
+    )
+
+    inventory = response.get('inventory')
+
+    if not isinstance(inventory, dict):
+        raise PermissionError(
+            'invalid privileged module inventory'
+        )
+
+    return inventory
 
 def privileged_inventory(local_root):
     component = None
@@ -1018,6 +1151,269 @@ def check_component(component):
 
     return result
 
+
+def valid_module_id(value):
+    if not isinstance(value, str) or not value:
+        return False
+
+    if value in {'.', '..'}:
+        return False
+
+    return all(
+        character.isascii()
+        and (
+            character.isalnum()
+            or character in {'.', '-', '_'}
+        )
+        for character in value
+    )
+
+
+def module_manifest_filename(module_id):
+    if not valid_module_id(module_id):
+        raise ValueError('invalid module id')
+
+    return (
+        'runtime/manifests/modules/'
+        + module_id
+        + '.manifest.json'
+    )
+
+
+def module_packages_filename(module_id):
+    if not valid_module_id(module_id):
+        raise ValueError('invalid module id')
+
+    return (
+        'runtime/manifests/modules/'
+        + module_id
+        + '.packages.tsv'
+    )
+
+
+def parse_module_packages_tsv(payload):
+    if not isinstance(payload, str):
+        raise ValueError('module package selector is not text')
+
+    packages = {}
+
+    for number, raw in enumerate(payload.splitlines(), 1):
+        line = raw.strip()
+
+        if not line:
+            continue
+
+        fields = line.split('\t')
+
+        if len(fields) != 5:
+            raise ValueError(
+                'invalid module package selector line '
+                + str(number)
+            )
+
+        package, version, arch, filename, sha256 = fields
+
+        if not package or not version or not arch:
+            raise ValueError('incomplete module package selector')
+
+        if not filename or Path(filename).name != filename:
+            raise ValueError('unsafe module package filename')
+
+        if filename in {'.', '..'}:
+            raise ValueError('unsafe module package filename')
+
+        if (
+            len(sha256) != 64
+            or any(
+                character not in '0123456789abcdefABCDEF'
+                for character in sha256
+            )
+        ):
+            raise ValueError('invalid module package sha256')
+
+        if filename in packages:
+            raise ValueError('duplicate module package filename')
+
+        packages[filename] = {
+            'package': package,
+            'version': version,
+            'arch': arch,
+            'filename': filename,
+            'sha256': sha256.lower(),
+        }
+
+    return packages
+
+
+def validate_module_package_membership(packages, normalized):
+    entries = normalized['entries']
+
+    declared_paths = {
+        'packages/' + filename
+        for filename in packages
+    }
+
+    manifest_package_paths = {
+        path
+        for path in entries
+        if Path(path).parts
+        and Path(path).parts[0] == 'packages'
+    }
+
+    if manifest_package_paths != declared_paths:
+        missing = sorted(declared_paths - manifest_package_paths)
+        extra = sorted(manifest_package_paths - declared_paths)
+
+        raise ValueError(
+            'module package membership mismatch: missing='
+            + repr(missing)
+            + ' extra='
+            + repr(extra)
+        )
+
+    for filename, package in packages.items():
+        path = 'packages/' + filename
+        entry = entries[path]
+
+        if entry.get('type') != 'file':
+            raise ValueError('module package entry is not a file')
+
+        sha256 = entry.get('sha256')
+
+        if not isinstance(sha256, str):
+            raise ValueError('module package manifest sha256 missing')
+
+        if sha256.lower() != package['sha256']:
+            raise ValueError('module package sha256 authority mismatch')
+
+    return True
+
+def compare_module_manifest(local_root, normalized):
+    expected = normalized['entries']
+    expected_paths = set(expected)
+
+    try:
+        actual = selected_inventory(
+            local_root,
+            expected_paths,
+        )
+    except PermissionError:
+        actual = privileged_module_inventory(
+            expected_paths
+        )
+
+    actual_paths = set(actual)
+
+    missing = sorted(
+        expected_paths - actual_paths
+    )
+
+    different = []
+
+    for path in sorted(expected_paths & actual_paths):
+        if expected[path] != actual[path]:
+            different.append(path)
+
+    valid = not missing and not different
+
+    return {
+        'valid': valid,
+        'expected_entries': len(expected),
+        'local_entries': len(actual),
+        'missing_count': len(missing),
+        'extra_count': 0,
+        'different_count': len(different),
+        'missing': missing[:MAX_DIFFERENCE_PATHS],
+        'extra': [],
+        'different': different[:MAX_DIFFERENCE_PATHS],
+        'difference_output_truncated': (
+            len(missing) > MAX_DIFFERENCE_PATHS
+            or len(different) > MAX_DIFFERENCE_PATHS
+        ),
+    }
+
+
+def check_module(module_id):
+    local_root = Path('/opt/neebles-build/modules')
+
+    result = {
+        'module': module_id,
+        'local_path': str(local_root),
+        'local_present': local_root.is_dir(),
+        'remote_verified': False,
+        'valid': None,
+        'status': None,
+        'manifest_version': None,
+        'remote_branch': None,
+    }
+
+    manifest_name = module_manifest_filename(module_id)
+
+    packages_name = module_packages_filename(module_id)
+
+    try:
+        remote = fetch_manifest(manifest_name)
+
+        packages_payload = fetch_text(
+            raw_url(
+                remote['branch'],
+                packages_name,
+            )
+        )
+    except Exception as error:
+        result['status'] = 'unverified_remote_unavailable'
+        result['remote_error'] = str(error)
+        return result
+
+    try:
+        normalized = validate_module_manifest(
+            remote['manifest'],
+            module_id,
+        )
+
+        packages = parse_module_packages_tsv(
+            packages_payload
+        )
+
+        validate_module_package_membership(
+            packages,
+            normalized,
+        )
+    except Exception as error:
+        result['status'] = 'remote_manifest_invalid'
+        result['remote_error'] = str(error)
+        return result
+
+    result['required_packages'] = len(packages)
+
+    result['remote_verified'] = True
+    result['remote_branch'] = remote['branch']
+    result['manifest_version'] = normalized['version']
+
+    if not local_root.is_dir():
+        result['valid'] = False
+        result['status'] = 'local_missing'
+        return result
+
+    try:
+        comparison = compare_module_manifest(
+            local_root,
+            normalized,
+        )
+    except PermissionError as error:
+        result['status'] = 'permission_denied_requires_root'
+        result['local_error'] = str(error)
+        return result
+
+    result['comparison'] = comparison
+    result['valid'] = comparison['valid']
+    result['status'] = (
+        'valid'
+        if comparison['valid']
+        else 'mismatch'
+    )
+
+    return result
 
 def overall_status(results):
     statuses = [
@@ -1463,11 +1859,53 @@ def usage():
             "neebles-check --calamares",
             "neebles-check --all",
             "neebles-check --restore",
+            "neebles-check --module MODULE_ID",
         ],
     }
 
 
 def main():
+    if (
+        len(sys.argv) == 3
+        and sys.argv[1] == '--module'
+    ):
+        module_id = sys.argv[2]
+
+        if not valid_module_id(module_id):
+            print(
+                json.dumps(
+                    usage(),
+                    indent=2,
+                    ensure_ascii=False,
+                )
+            )
+            return 2
+
+        result = check_module(module_id)
+        results = [result]
+
+        output = {
+            'schema': 'neebles-check-v1',
+            'repository': (
+                'https://github.com/'
+                + REPOSITORY
+            ),
+            'mode': '--module',
+            'module': module_id,
+            'overall_status': overall_status(results),
+            'modules': results,
+        }
+
+        print(
+            json.dumps(
+                output,
+                indent=2,
+                ensure_ascii=False,
+            )
+        )
+
+        return exit_code(results)
+
     if len(sys.argv) != 2:
         print(
             json.dumps(
