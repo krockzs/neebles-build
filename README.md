@@ -1,5 +1,9 @@
 # N.E.E.B.L.E.S. BUILD
 
+**Current integration status: Point 8 GREEN / CLOSED. Boss contract CLOSED.**
+
+BUILD remains the image-side materialization and recovery layer. Point 8 did not change that ownership boundary; it hardened how canonical OS and CUSTOM material is published into the image.
+
 N.E.E.B.L.E.S. BUILD is the materialization layer used to compose the N.E.E.B.L.E.S. OS image.
 
 It turns certified project inputs into filesystem state consumed by the live-build process.
@@ -28,7 +32,20 @@ config/includes.chroot/usr/lib/neebles/platform/
 
 The OS-defined `neebles.domestic_workspace` authority is synchronized into the image together with the canonical AuthoritySupply.
 
+Point 8 certified the final image-side permission contract:
+
+```text
+authority JSON descriptors  root:root 0644
+platform providers          root:root 0755
+```
+
+BUILD normalizes those permissions during materialization. Source bytes remain unchanged.
+
+This is required because Boss authenticates platform-controlled material and rejects writable authority components that would violate the platform-control boundary.
+
 BUILD materializes authority. It does not become the semantic owner of platform authority.
+
+Platform-authority publication is also transactional. BUILD stages the next materialized state and does not leave a partially published AuthoritySupply/provider tree when synchronization fails.
 
 ## Boss corpus
 
@@ -77,6 +94,8 @@ scripts/sync-neebles-custom-construction.py
 ```
 
 BUILD transports declaration files opaquely.
+
+Point 8 hardened construction publication so replacement is transactional: a failed publication must not expose a partially replaced declaration tree and the previous valid material is restored when publication cannot complete.
 
 It does not interpret construction semantics, module technology, compiler identity or package-manager identity.
 
@@ -147,9 +166,9 @@ A module cannot claim ownership of the shared `packages` or `rootfs` roots thems
 
 Path traversal, absolute selected paths and symlink-ancestor escape are rejected.
 
-## Point 7 boundary
+## Point 7 / Point 8 boundary
 
-Point 7 preserves the ownership split:
+Point 7 established the ownership split and Point 8 globally recertified it:
 
 ```text
 CUSTOM  -> certified material, membership, integrity, construction semantics
@@ -158,6 +177,31 @@ BUILD   -> image-side materialization and independent recovery
 Boss    -> generic governed consumption and execution
 ```
 
-BUILD does not teach Boss module technology and does not duplicate Lifecycle, Registry or AuthoritySupply semantics.
+Point 8 confirmed that BUILD remains byte/semantic opaque for consumer construction declarations and does not become a second authority, Lifecycle, Registry or module-technology engine.
+
+The final Point 8 BUILD corrections were local hardening only:
+
+- materialize the current `neebles.domestic_workspace` authority into the image-side AuthoritySupply;
+- make CUSTOM construction publication transactional;
+- make OS platform-authority publication transactional;
+- normalize platform authority JSON descriptors to `root:root 0644`;
+- preserve platform providers as `root:root 0755`;
+- preserve byte identity while normalizing filesystem permissions.
+
+Final pre-VM certification included:
+
+```text
+BUILD Python syntax                         GREEN
+disposable CUSTOM publication               GREEN
+disposable platform publication             GREEN
+platform authority descriptor modes         0644
+platform provider modes                     0755
+Boss / BUILD git diff --check               GREEN
+Point 8 worktree contract                   GREEN
+```
+
+Point 8 is **GREEN / CLOSED** and **BOSS CONTRACT CLOSED** is now **YES**.
+
+This does not claim that the final N.E.E.B.L.E.S. image has already completed real machine/VM acceptance. Installed-system behavior remains for the dedicated VM phase.
 
 Generated build products, caches and temporary workspaces are not canonical source.
