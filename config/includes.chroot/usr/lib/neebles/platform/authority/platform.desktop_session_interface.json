@@ -1,0 +1,7 @@
+{
+  "schema": "1",
+  "name": "neebles-platform-authority",
+  "authority": "platform.desktop_session_interface",
+  "protocol": "neebles-desktop-session-interface-v1",
+  "provider": "/usr/lib/neebles/platform/bin/neebles-desktop-session-provider"
+}

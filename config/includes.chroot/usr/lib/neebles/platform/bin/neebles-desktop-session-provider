@@ -1,0 +1,125 @@
+#!/usr/bin/env python3
+
+import json
+import os
+import stat
+import sys
+from pathlib import Path
+
+AUTHORITY = "platform.desktop_session_interface"
+PROTOCOL = "neebles-desktop-session-interface-v1"
+OUTPUT_NAME = "neebles-capability-provider-output"
+OUTPUT_SCHEMA = "1"
+
+UID_KEY = "NEEBLES_DESKTOP_UID"
+GID_KEY = "NEEBLES_DESKTOP_GID"
+
+
+def fail(message):
+    print("neebles-desktop-session-provider: " + message, file=sys.stderr)
+    raise SystemExit(64)
+
+
+def parse_identity():
+    uid_raw = os.environ.get(UID_KEY)
+    gid_raw = os.environ.get(GID_KEY)
+
+    if uid_raw is None or gid_raw is None:
+        fail("desktop UID and GID must be supplied together")
+
+    try:
+        uid = int(uid_raw, 10)
+    except ValueError:
+        fail("desktop UID must be an unsigned integer")
+
+    try:
+        gid = int(gid_raw, 10)
+    except ValueError:
+        fail("desktop GID must be an unsigned integer")
+
+    if uid < 0:
+        fail("desktop UID cannot be negative")
+
+    if gid < 0:
+        fail("desktop GID cannot be negative")
+
+    return uid, gid
+
+
+def inspect_runtime_directory(uid):
+    runtime_dir = Path("/run/user") / str(uid)
+
+    try:
+        info = runtime_dir.stat()
+    except FileNotFoundError:
+        fail("desktop runtime directory does not exist")
+    except OSError as error:
+        fail("could not inspect desktop runtime directory: " + str(error))
+
+    if not stat.S_ISDIR(info.st_mode):
+        fail("desktop runtime path is not a directory")
+
+    if info.st_uid != uid:
+        fail(
+            "desktop runtime directory owner mismatch: "
+            + str(info.st_uid)
+            + " != "
+            + str(uid)
+        )
+
+    return runtime_dir
+
+
+def inspect_session_bus(runtime_dir, uid):
+    bus = runtime_dir / "bus"
+
+    try:
+        info = bus.stat()
+    except FileNotFoundError:
+        fail("desktop session bus does not exist")
+    except OSError as error:
+        fail("could not inspect desktop session bus: " + str(error))
+
+    if not stat.S_ISSOCK(info.st_mode):
+        fail("desktop session bus path is not a Unix socket")
+
+    if info.st_uid != uid:
+        fail(
+            "desktop session bus owner mismatch: "
+            + str(info.st_uid)
+            + " != "
+            + str(uid)
+        )
+
+    return bus
+
+
+def main():
+    uid, gid = parse_identity()
+
+    runtime_dir = inspect_runtime_directory(uid)
+    bus = inspect_session_bus(runtime_dir, uid)
+
+    output = {
+        "schema": OUTPUT_SCHEMA,
+        "name": OUTPUT_NAME,
+        "authority": AUTHORITY,
+        "protocol": PROTOCOL,
+        "values": {
+            "XDG_RUNTIME_DIR": str(runtime_dir),
+            "DBUS_SESSION_BUS_ADDRESS": "unix:path=" + str(bus)
+        }
+    }
+
+    json.dump(
+        output,
+        sys.stdout,
+        separators=(",", ":"),
+        sort_keys=True
+    )
+
+    sys.stdout.write("\n")
+
+
+if __name__ == "__main__":
+    main()

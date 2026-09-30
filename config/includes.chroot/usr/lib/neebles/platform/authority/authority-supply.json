@@ -17,6 +17,10 @@
     {
       "authority": "boss.modules.update_staging",
       "location": "/usr/lib/neebles/platform/authority/boss.modules.update_staging.json"
+    },
+    {
+      "authority": "platform.desktop_session_interface",
+      "location": "/usr/lib/neebles/platform/authority/platform.desktop_session_interface.json"
     }
   ]
 }

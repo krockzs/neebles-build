@@ -12,11 +12,24 @@ EXPECTED_AUTHORITY_FILES = {
     "boss.modules.install_staging.json",
     "boss.modules.update_staging.json",
     "platform.filesystem_boundary.json",
+    "platform.desktop_session_interface.json",
     "system.dns_resolver_config.json",
 }
 
-EXPECTED_PROVIDER = "bin/neebles-boundary-provider"
-EXPECTED_PROVIDER_INSTALL_PATH = "/usr/lib/neebles/platform/bin/neebles-boundary-provider"
+EXPECTED_PROVIDERS = {
+    "neebles-boundary-provider":
+        "/usr/lib/neebles/platform/bin/neebles-boundary-provider",
+    "neebles-desktop-session-provider":
+        "/usr/lib/neebles/platform/bin/neebles-desktop-session-provider",
+}
+
+EXPECTED_PROVIDER_INSTALL_PATH = EXPECTED_PROVIDERS[
+    "neebles-boundary-provider"
+]
+
+EXPECTED_DESKTOP_SESSION_PROVIDER_INSTALL_PATH = EXPECTED_PROVIDERS[
+    "neebles-desktop-session-provider"
+]
 
 EXPECTED_SUPPLY = {
     "schema": "1",
@@ -38,6 +51,10 @@ EXPECTED_SUPPLY = {
             "authority": "boss.modules.update_staging",
             "location": "/usr/lib/neebles/platform/authority/boss.modules.update_staging.json",
         },
+        {
+            "authority": "platform.desktop_session_interface",
+            "location": "/usr/lib/neebles/platform/authority/platform.desktop_session_interface.json",
+        },
     ],
 }
 
@@ -47,6 +64,14 @@ EXPECTED_PLATFORM = {
     "authority": "platform.filesystem_boundary",
     "protocol": "neebles-filesystem-boundary-v1",
     "provider": EXPECTED_PROVIDER_INSTALL_PATH,
+}
+
+EXPECTED_DESKTOP_SESSION_PLATFORM = {
+    "schema": "1",
+    "name": "neebles-platform-authority",
+    "authority": "platform.desktop_session_interface",
+    "protocol": "neebles-desktop-session-interface-v1",
+    "provider": EXPECTED_DESKTOP_SESSION_PROVIDER_INSTALL_PATH,
 }
 
 EXPECTED_EXTERNAL = {
@@ -93,7 +118,10 @@ args = parser.parse_args()
 
 source_platform = Path(args.os_root).resolve() / "platform"
 source_authority = source_platform / "authority"
-source_provider = source_platform / EXPECTED_PROVIDER
+source_providers = {
+    name: source_platform / "bin" / name
+    for name in EXPECTED_PROVIDERS
+}
 
 destination_platform = (
     Path(args.build_root).resolve()
@@ -106,7 +134,10 @@ destination_platform = (
 )
 
 destination_authority = destination_platform / "authority"
-destination_provider = destination_platform / EXPECTED_PROVIDER
+destination_providers = {
+    name: destination_platform / "bin" / name
+    for name in EXPECTED_PROVIDERS
+}
 
 if not source_authority.is_dir():
     fail("OS authority source missing :: " + str(source_authority))
@@ -120,17 +151,35 @@ actual_files = {
 if actual_files != EXPECTED_AUTHORITY_FILES:
     fail("OS authority source file set mismatch :: " + repr(sorted(actual_files)))
 
-if not source_provider.is_file():
-    fail("OS boundary provider missing :: " + str(source_provider))
+for provider_name, source_provider in source_providers.items():
+    if not source_provider.is_file():
+        fail(
+            "OS platform provider missing :: "
+            + provider_name
+            + " :: "
+            + str(source_provider)
+        )
 
-if not source_provider.stat().st_mode & 0o111:
-    fail("OS boundary provider is not executable")
+    if not source_provider.stat().st_mode & 0o111:
+        fail(
+            "OS platform provider is not executable :: "
+            + provider_name
+        )
 
 if load_json(source_authority / "authority-supply.json") != EXPECTED_SUPPLY:
     fail("AuthoritySupply semantic drift")
 
 if load_json(source_authority / "platform.filesystem_boundary.json") != EXPECTED_PLATFORM:
     fail("filesystem boundary semantic drift")
+
+if (
+    load_json(
+        source_authority
+        / "platform.desktop_session_interface.json"
+    )
+    != EXPECTED_DESKTOP_SESSION_PLATFORM
+):
+    fail("desktop session interface semantic drift")
 
 if load_json(source_authority / "system.dns_resolver_config.json") != EXPECTED_EXTERNAL:
     fail("DNS resolver semantic drift")
@@ -140,7 +189,10 @@ for name, expected in EXPECTED_WRITABLE.items():
         fail("writable authority semantic drift :: " + name)
 
 destination_authority.mkdir(parents=True, exist_ok=True)
-destination_provider.parent.mkdir(parents=True, exist_ok=True)
+(destination_platform / "bin").mkdir(
+    parents=True,
+    exist_ok=True
+)
 
 for child in list(destination_authority.iterdir()):
     if child.is_file() or child.is_symlink():
@@ -151,8 +203,16 @@ for child in list(destination_authority.iterdir()):
 for name in sorted(EXPECTED_AUTHORITY_FILES):
     shutil.copy2(source_authority / name, destination_authority / name)
 
-shutil.copy2(source_provider, destination_provider)
-destination_provider.chmod(0o755)
+for provider_name in sorted(EXPECTED_PROVIDERS):
+    source_provider = source_providers[provider_name]
+    destination_provider = destination_providers[provider_name]
+
+    shutil.copy2(
+        source_provider,
+        destination_provider
+    )
+
+    destination_provider.chmod(0o755)
 
 for name in sorted(EXPECTED_AUTHORITY_FILES):
     source_path = source_authority / name
@@ -161,12 +221,24 @@ for name in sorted(EXPECTED_AUTHORITY_FILES):
     if sha(source_path) != sha(destination_path):
         fail("materialized authority differs from OS source :: " + name)
 
-if sha(source_provider) != sha(destination_provider):
-    fail("materialized boundary provider differs from OS source")
+for provider_name in sorted(EXPECTED_PROVIDERS):
+    source_provider = source_providers[provider_name]
+    destination_provider = destination_providers[provider_name]
+
+    if sha(source_provider) != sha(destination_provider):
+        fail(
+            "materialized platform provider differs from OS source :: "
+            + provider_name
+        )
 
 print("GREEN :: OS platform authority and provider materialized into BUILD")
 
 for name in sorted(EXPECTED_AUTHORITY_FILES):
     print(name + " :: " + sha(destination_authority / name))
 
-print("neebles-boundary-provider :: " + sha(destination_provider))
+for provider_name in sorted(EXPECTED_PROVIDERS):
+    print(
+        provider_name
+        + " :: "
+        + sha(destination_providers[provider_name])
+    )
