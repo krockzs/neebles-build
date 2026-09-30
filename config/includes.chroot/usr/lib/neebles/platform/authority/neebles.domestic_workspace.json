@@ -1,0 +1,6 @@
+{
+  "schema": "1",
+  "name": "neebles-writable-data-authority",
+  "authority": "neebles.domestic_workspace",
+  "root": "/opt/neebles-build"
+}

@@ -6,6 +6,8 @@ import hashlib
 import json
 import shutil
 import sys
+import tempfile
+import uuid
 
 EXPECTED_AUTHORITY_FILES = {
     "authority-supply.json",
@@ -199,38 +201,187 @@ for name, expected in EXPECTED_WRITABLE.items():
     if load_json(source_authority / name) != expected:
         fail("writable authority semantic drift :: " + name)
 
-destination_authority.mkdir(parents=True, exist_ok=True)
-(destination_platform / "bin").mkdir(
+destination_platform.parent.mkdir(
     parents=True,
-    exist_ok=True
+    exist_ok=True,
 )
 
-for child in list(destination_authority.iterdir()):
-    if child.is_file() or child.is_symlink():
-        child.unlink()
-    elif child.is_dir():
-        shutil.rmtree(child)
+stage_root = Path(
+    tempfile.mkdtemp(
+        prefix=".platform.stage-",
+        dir=str(destination_platform.parent),
+    )
+)
+
+stage_authority = stage_root / "authority"
+stage_bin = stage_root / "bin"
+
+stage_authority.mkdir(parents=True, exist_ok=True)
+stage_bin.mkdir(parents=True, exist_ok=True)
 
 for name in sorted(EXPECTED_AUTHORITY_FILES):
-    shutil.copy2(source_authority / name, destination_authority / name)
+    source_path = source_authority / name
+    staged_path = stage_authority / name
+
+    shutil.copy2(source_path, staged_path)
+    staged_path.chmod(0o644)
+
+    if sha(source_path) != sha(staged_path):
+        shutil.rmtree(stage_root)
+
+        fail(
+            "staged authority differs from OS source :: "
+            + name
+        )
 
 for provider_name in sorted(EXPECTED_PROVIDERS):
     source_provider = source_providers[provider_name]
-    destination_provider = destination_providers[provider_name]
+    staged_provider = stage_bin / provider_name
 
     shutil.copy2(
         source_provider,
-        destination_provider
+        staged_provider,
     )
 
-    destination_provider.chmod(0o755)
+    staged_provider.chmod(0o755)
+
+    if sha(source_provider) != sha(staged_provider):
+        shutil.rmtree(stage_root)
+
+        fail(
+            "staged platform provider differs from OS source :: "
+            + provider_name
+        )
+
+destination_authority.parent.mkdir(
+    parents=True,
+    exist_ok=True,
+)
+
+for destination_provider in destination_providers.values():
+    destination_provider.parent.mkdir(
+        parents=True,
+        exist_ok=True,
+    )
+
+transaction_id = uuid.uuid4().hex
+
+backup_root = destination_platform.parent / (
+    ".platform.backup-" + transaction_id
+)
+
+backup_authority = backup_root / "authority"
+backup_bin = backup_root / "bin"
+
+backup_root.mkdir(parents=True, exist_ok=False)
+backup_bin.mkdir(parents=True, exist_ok=False)
+
+authority_had_previous = destination_authority.exists()
+
+provider_had_previous = {
+    name: destination_providers[name].exists()
+    for name in EXPECTED_PROVIDERS
+}
+
+authority_published = False
+providers_published = []
+
+try:
+    if authority_had_previous:
+        destination_authority.rename(backup_authority)
+
+    stage_authority.rename(destination_authority)
+    authority_published = True
+
+    for provider_name in sorted(EXPECTED_PROVIDERS):
+        destination_provider = destination_providers[provider_name]
+        staged_provider = stage_bin / provider_name
+        backup_provider = backup_bin / provider_name
+
+        if provider_had_previous[provider_name]:
+            destination_provider.rename(backup_provider)
+
+        staged_provider.rename(destination_provider)
+        providers_published.append(provider_name)
+
+except Exception as exc:
+    rollback_failures = []
+
+    for provider_name in reversed(sorted(EXPECTED_PROVIDERS)):
+        destination_provider = destination_providers[provider_name]
+        backup_provider = backup_bin / provider_name
+
+        try:
+            if backup_provider.exists():
+                if destination_provider.exists():
+                    destination_provider.unlink()
+
+                backup_provider.rename(destination_provider)
+
+            elif (
+                provider_name in providers_published
+                and not provider_had_previous[provider_name]
+                and destination_provider.exists()
+            ):
+                destination_provider.unlink()
+
+        except Exception as rollback_exc:
+            rollback_failures.append(
+                provider_name + " :: " + repr(rollback_exc)
+            )
+
+    try:
+        if backup_authority.exists():
+            if destination_authority.exists():
+                shutil.rmtree(destination_authority)
+
+            backup_authority.rename(destination_authority)
+
+        elif (
+            authority_published
+            and not authority_had_previous
+            and destination_authority.exists()
+        ):
+            shutil.rmtree(destination_authority)
+
+    except Exception as rollback_exc:
+        rollback_failures.append(
+            "authority :: " + repr(rollback_exc)
+        )
+
+    if stage_root.exists():
+        shutil.rmtree(stage_root)
+
+    if rollback_failures:
+        fail(
+            "platform publication failed and rollback was incomplete :: "
+            + repr(exc)
+            + " :: "
+            + " | ".join(rollback_failures)
+            + " :: recovery material :: "
+            + str(backup_root)
+        )
+
+    if backup_root.exists():
+        shutil.rmtree(backup_root)
+
+    fail(
+        "platform publication failed; previous materialization restored :: "
+        + repr(exc)
+    )
+
+if stage_root.exists():
+    shutil.rmtree(stage_root)
 
 for name in sorted(EXPECTED_AUTHORITY_FILES):
     source_path = source_authority / name
     destination_path = destination_authority / name
 
     if sha(source_path) != sha(destination_path):
-        fail("materialized authority differs from OS source :: " + name)
+        fail(
+            "committed authority differs from OS source :: "
+            + name
+        )
 
 for provider_name in sorted(EXPECTED_PROVIDERS):
     source_provider = source_providers[provider_name]
@@ -238,9 +389,12 @@ for provider_name in sorted(EXPECTED_PROVIDERS):
 
     if sha(source_provider) != sha(destination_provider):
         fail(
-            "materialized platform provider differs from OS source :: "
+            "committed platform provider differs from OS source :: "
             + provider_name
         )
+
+if backup_root.exists():
+    shutil.rmtree(backup_root)
 
 print("GREEN :: OS platform authority and provider materialized into BUILD")
 
