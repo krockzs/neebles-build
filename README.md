@@ -1,12 +1,38 @@
 # N.E.E.B.L.E.S. BUILD
 
-**Current integration status: Point 8 GREEN / CLOSED. Boss contract CLOSED.**
+**Current integration status: N.E.E.B.L.E.S. OS 1.0.5 / source integration CLOSED / LIVE acceptance pending. Boss contract CLOSED.**
+
+Source-side integration is complete. The next certification frontier is the real N.E.E.B.L.E.S. Live environment, installation flow and installed-system acceptance.
 
 BUILD remains the image-side materialization and recovery layer. Point 8 did not change that ownership boundary; it hardened how canonical OS and CUSTOM material is published into the image.
 
 N.E.E.B.L.E.S. BUILD is the materialization layer used to compose the N.E.E.B.L.E.S. OS image.
 
 It turns certified project inputs into filesystem state consumed by the live-build process.
+
+## Pre-LIVE closure
+
+The current image source targets **N.E.E.B.L.E.S. OS 1.0.5**.
+
+The customized installer runtime identifies itself as **NEEBLES-Calamares 1.0.6**.
+
+The slideshow integration now provides:
+
+- local slide progression independent of network availability
+- immediate progression when video playback reaches end-of-media
+- background synchronization of remote slide media
+- optional localized TXT sidecars
+- localized `es_CL` and `en_US` text
+- English fallback for unsupported locales
+- stable media geometry when TXT content is absent
+- staging and atomic publication of synchronized material
+- active-slide protection during synchronization
+- offline reuse of locally available material
+- domestic Qt 6.8.2 validation of `show.qml` and `show.local.qml`
+
+Source-level integration and domestic validation are complete.
+
+Real Live boot, Calamares execution, installation and installed-system behavior remain intentionally unclaimed until LIVE acceptance.
 
 ## Responsibilities
 

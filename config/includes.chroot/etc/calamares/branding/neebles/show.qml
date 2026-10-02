@@ -11,12 +11,11 @@ Presentation {
     property int remoteIndex: 0
     property bool remoteAvailable: remoteSlides.length > 0
     property bool currentIsVideo: false
-    property bool prepareRequested: false
     property int currentSlot: 0
-    property int preparedSlot: 0
-    property string preparedExtension: ""
-    property bool preparationInFlight: false
-    property bool advancePending: false
+
+    property string slideHeading: ""
+    property string slideBody: ""
+    property string slideHighlight: ""
 
     function setActiveSlot(number) {
         var xhr = new XMLHttpRequest()
@@ -29,44 +28,161 @@ Presentation {
         xhr.send()
     }
 
-    function requestNextPreparation() {
-        if (presentation.preparationInFlight)
+    function clearSlideText() {
+        slideHeading = ""
+        slideBody = ""
+        slideHighlight = ""
+    }
+
+    function escapeHtml(value) {
+        return value
+            .replace(/&/g, "&amp;")
+            .replace(/</g, "&lt;")
+            .replace(/>/g, "&gt;")
+    }
+
+    function richText(value) {
+        var result = escapeHtml(value)
+
+        result = result
+            .replace(/\[b\]/g, "<b>")
+            .replace(/\[\/b\]/g, "</b>")
+            .replace(/\[i\]/g, "<i>")
+            .replace(/\[\/i\]/g, "</i>")
+            .replace(/\[u\]/g, "<u>")
+            .replace(/\[\/u\]/g, "</u>")
+            .replace(/\r\n/g, "\n")
+            .replace(/\r/g, "\n")
+            .replace(/\n/g, "<br/>")
+
+        return result
+    }
+
+    function extractBlock(content, name) {
+        var opening = "[" + name + "]"
+        var closing = "[/" + name + "]"
+
+        var start = content.indexOf(opening)
+
+        if (start < 0)
+            return ""
+
+        start += opening.length
+
+        var end = content.indexOf(
+            closing,
+            start
+        )
+
+        if (end < 0)
+            return ""
+
+        return content
+            .substring(start, end)
+            .trim()
+    }
+
+    function localizedContent(raw) {
+        var lines = raw
+            .replace(/\r\n/g, "\n")
+            .replace(/\r/g, "\n")
+            .split("\n")
+
+        var sections = ({})
+        var currentLocale = ""
+
+        for (var i = 0; i < lines.length; ++i) {
+            var line = lines[i]
+            var match = line
+                .trim()
+                .match(/^\[([A-Za-z]{2,3}(?:_[A-Za-z0-9]+)?)\]$/)
+
+            if (match) {
+                currentLocale = match[1]
+                    .replace("-", "_")
+
+                sections[currentLocale] = ""
+                continue
+            }
+
+            if (currentLocale.length > 0) {
+                if (sections[currentLocale].length > 0)
+                    sections[currentLocale] += "\n"
+
+                sections[currentLocale] += line
+            }
+        }
+
+        var localeName = Qt.locale().name
+            .replace("-", "_")
+            .replace(/\.UTF-8$/i, "")
+            .replace(/\.utf8$/i, "")
+
+        if (sections[localeName] !== undefined)
+            return sections[localeName]
+
+        if (sections["en_US"] !== undefined)
+            return sections["en_US"]
+
+        return ""
+    }
+
+    function parseSlideText(raw) {
+        var content = localizedContent(raw)
+
+        if (content.length === 0) {
+            clearSlideText()
             return
+        }
 
-        presentation.preparationInFlight = true
+        slideHeading = richText(
+            extractBlock(
+                content,
+                "heading"
+            )
+        )
 
+        slideBody = richText(
+            extractBlock(
+                content,
+                "body"
+            )
+        )
+
+        slideHighlight = richText(
+            extractBlock(
+                content,
+                "highlight"
+            )
+        )
+    }
+
+    function loadSlideText(number) {
+        clearSlideText()
+
+        var requestedSlot = number
         var xhr = new XMLHttpRequest()
 
         xhr.open(
             "GET",
-            "http://127.0.0.1:28765/prepare"
+            "http://127.0.0.1:28765/text/" + number
         )
 
         xhr.onreadystatechange = function() {
             if (xhr.readyState !== XMLHttpRequest.DONE)
                 return
 
-            presentation.preparationInFlight = false
-
-            if (xhr.status !== 200)
+            if (presentation.currentSlot !== requestedSlot)
                 return
 
-            try {
-                var result = JSON.parse(xhr.responseText)
-
-                if (result.prepared) {
-                    presentation.preparedSlot = result.slot
-                    presentation.preparedExtension = result.extension
-                }
-
-                if (presentation.advancePending &&
-                    presentation.preparedSlot > 0 &&
-                    presentation.preparedExtension.length > 0) {
-                    presentation.advancePending = false
-                    presentation.advance()
-                }
-            } catch (e) {
+            if (xhr.status !== 200) {
+                presentation.clearSlideText()
+                return
             }
+
+            presentation.parseSlideText(
+                xhr.responseText
+            )
         }
 
         xhr.send()
@@ -81,25 +197,62 @@ Presentation {
     FolderListModel {
         id: remoteFiles
         folder: "file:///run/neebles/calamares/slides"
-        nameFilters: [ "*.png", "*.jpg", "*.jpeg", "*.mp4" ]
+        nameFilters: [
+            "*.png",
+            "*.jpg",
+            "*.jpeg",
+            "*.mp4"
+        ]
         showDirs: false
         showFiles: true
     }
 
+    function indexForSlot(number) {
+        for (var i = 0; i < remoteSlides.length; ++i) {
+            if (remoteSlides[i].number === number)
+                return i
+        }
+
+        return -1
+    }
+
     function refreshRemoteSlides() {
         var files = []
+        var knownSlots = ({})
 
         for (var i = 0; i < remoteFiles.count; ++i) {
-            var name = remoteFiles.get(i, "fileName")
-            var match = name.match(/^([0-9]+)\.(png|jpg|jpeg|mp4)$/i)
+            var name = remoteFiles.get(
+                i,
+                "fileName"
+            )
 
-            if (match) {
-                files.push({
-                    number: parseInt(match[1]),
-                    name: name,
-                    type: match[2].toLowerCase() === "mp4" ? "video" : "image"
-                })
-            }
+            var match = name.match(
+                /^([0-9]+)\.(png|jpg|jpeg|mp4)$/i
+            )
+
+            if (!match)
+                continue
+
+            var number = parseInt(
+                match[1]
+            )
+
+            if (number < 1 || number > 20)
+                continue
+
+            if (knownSlots[number])
+                continue
+
+            knownSlots[number] = true
+
+            files.push({
+                number: number,
+                name: name,
+                type:
+                    match[2].toLowerCase() === "mp4"
+                    ? "video"
+                    : "image"
+            })
         }
 
         files.sort(function(a, b) {
@@ -108,105 +261,80 @@ Presentation {
 
         remoteSlides = files
 
-        if (remoteIndex >= remoteSlides.length)
+        if (remoteSlides.length === 0) {
             remoteIndex = 0
+            return
+        }
 
-        if (remoteSlides.length > 0 && !currentMediaValid())
-            showCurrent()
-    }
+        if (currentSlot > 0) {
+            var currentIndex =
+                indexForSlot(currentSlot)
 
-    function currentMediaValid() {
-        if (remoteSlides.length === 0)
-            return false
+            if (currentIndex >= 0) {
+                remoteIndex = currentIndex
+                return
+            }
+        }
 
-        if (remoteIndex < 0 || remoteIndex >= remoteSlides.length)
-            return false
-
-        if (currentIsVideo)
-            return mediaPlayer.source.toString().length > 0
-
-        return remoteImage.source.toString().length > 0
+        remoteIndex = 0
+        showCurrent()
     }
 
     function showCurrent() {
         if (remoteSlides.length === 0)
             return
 
+        if (
+            remoteIndex < 0 ||
+            remoteIndex >= remoteSlides.length
+        ) {
+            remoteIndex = 0
+        }
+
         var item = remoteSlides[remoteIndex]
+
         var source =
-            "file:///run/neebles/calamares/slides/" + item.name
+            "file:///run/neebles/calamares/slides/" +
+            item.name
 
         currentSlot = item.number
-        setActiveSlot(currentSlot)
+        currentIsVideo =
+            item.type === "video"
 
-        prepareRequested = false
+        setActiveSlot(currentSlot)
+        loadSlideText(currentSlot)
+
         imageTimer.stop()
-        imagePrepareTimer.stop()
         mediaPlayer.stop()
+
         mediaPlayer.source = ""
         remoteImage.source = ""
-
-        currentIsVideo = item.type === "video"
 
         if (currentIsVideo) {
             mediaPlayer.source = source
             mediaPlayer.play()
         } else {
             remoteImage.source = source
-            imagePrepareTimer.restart()
             imageTimer.restart()
         }
     }
 
-    function advance() {
-        if (presentation.preparedSlot <= 0 ||
-            presentation.preparedExtension.length === 0) {
-            if (presentation.preparationInFlight) {
-                presentation.advancePending = true
-            }
-            return
-        }
-
-        presentation.advancePending = false
-
-        var slot = presentation.preparedSlot
-        var extension = presentation.preparedExtension
-
-        presentation.preparedSlot = 0
-        presentation.preparedExtension = ""
-
-        var nextIndex = -1
-
-        for (var i = 0; i < remoteSlides.length; ++i) {
-            if (remoteSlides[i].number === slot) {
-                nextIndex = i
-                break
-            }
-        }
-
-        if (nextIndex < 0) {
-            remoteSlides.push({
-                number: slot,
-                name: slot + "." + extension,
-                type: extension === "mp4" ? "video" : "image"
-            })
-
-            remoteSlides.sort(function(a, b) {
-                return a.number - b.number
-            })
-
-            for (var j = 0; j < remoteSlides.length; ++j) {
-                if (remoteSlides[j].number === slot) {
-                    nextIndex = j
-                    break
-                }
-            }
-        }
-
-        if (nextIndex < 0)
+    function advanceLocal() {
+        if (remoteSlides.length === 0)
             return
 
-        remoteIndex = nextIndex
+        var index =
+            indexForSlot(currentSlot)
+
+        if (index < 0)
+            index = remoteIndex
+
+        index += 1
+
+        if (index >= remoteSlides.length)
+            index = 0
+
+        remoteIndex = index
         showCurrent()
     }
 
@@ -215,45 +343,18 @@ Presentation {
         interval: 1000
         running: true
         repeat: true
-        onTriggered: presentation.refreshRemoteSlides()
+
+        onTriggered:
+            presentation.refreshRemoteSlides()
     }
 
     Timer {
         id: imageTimer
         interval: 20000
         repeat: false
-        onTriggered: presentation.advance()
-    }
 
-    Timer {
-        id: imagePrepareTimer
-        interval: 18000
-        repeat: false
-
-        onTriggered: {
-            if (!presentation.currentIsVideo &&
-                !presentation.prepareRequested) {
-                presentation.prepareRequested = true
-                presentation.requestNextPreparation()
-            }
-        }
-    }
-
-    Timer {
-        id: videoPositionTimer
-        interval: 250
-        running: presentation.currentIsVideo &&
-                 mediaPlayer.playbackState === MediaPlayer.PlayingState
-        repeat: true
-
-        onTriggered: {
-            if (!presentation.prepareRequested &&
-                mediaPlayer.duration > 0 &&
-                mediaPlayer.position >= mediaPlayer.duration - 2000) {
-                presentation.prepareRequested = true
-                presentation.requestNextPreparation()
-            }
-        }
+        onTriggered:
+            presentation.advanceLocal()
     }
 
     MediaPlayer {
@@ -262,54 +363,141 @@ Presentation {
         audioOutput: null
 
         onMediaStatusChanged: {
-            if (mediaStatus === MediaPlayer.EndOfMedia)
-                presentation.advance()
+            if (
+                mediaStatus === MediaPlayer.EndOfMedia
+            ) {
+                presentation.advanceLocal()
+            }
         }
 
         onErrorOccurred: {
-            presentation.advance()
+            presentation.advanceLocal()
         }
     }
 
     Slide {
-        Image {
-            id: fallbackImage
-            source: "slide1.png"
-            width: 467
-            height: 280
-            anchors.horizontalCenter: parent.horizontalCenter
-            anchors.verticalCenter: parent.verticalCenter
-            fillMode: Image.PreserveAspectFit
-            visible: !presentation.remoteAvailable
+        Item {
+            id: leftPanel
+
+            anchors.left: parent.left
+            anchors.top: parent.top
+            anchors.bottom: parent.bottom
+
+            width: parent.width * 0.25
+
+            Column {
+                anchors.left: parent.left
+                anchors.right: parent.right
+                anchors.verticalCenter:
+                    parent.verticalCenter
+
+                anchors.leftMargin: 18
+                anchors.rightMargin: 18
+
+                spacing: 14
+
+                Text {
+                    width: parent.width
+                    text: presentation.slideHeading
+
+                    textFormat: Text.RichText
+                    wrapMode: Text.WordWrap
+
+                    font.pixelSize: 28
+                    font.bold: true
+
+                    color: "#A78BFA"
+
+                    horizontalAlignment:
+                        Text.AlignLeft
+                }
+
+                Text {
+                    width: parent.width
+                    text: presentation.slideBody
+
+                    textFormat: Text.RichText
+                    wrapMode: Text.WordWrap
+
+                    font.pixelSize: 17
+
+                    color: "#C4B5FD"
+
+                    horizontalAlignment:
+                        Text.AlignLeft
+                }
+
+                Text {
+                    width: parent.width
+                    text:
+                        presentation.slideHighlight
+
+                    textFormat: Text.RichText
+                    wrapMode: Text.WordWrap
+
+                    font.pixelSize: 18
+                    font.bold: true
+
+                    color: "#8B5CF6"
+
+                    horizontalAlignment:
+                        Text.AlignLeft
+                }
+            }
         }
 
-        Text {
-            anchors.top: fallbackImage.bottom
-            anchors.topMargin: 15
-            anchors.horizontalCenter: parent.horizontalCenter
-            visible: !presentation.remoteAvailable
-            text: "Welcome to N.E.E.B.L.E.S. OS.<br/>The installation should complete in a few minutes."
-            color: "#ffffff"
-            horizontalAlignment: Text.AlignHCenter
-        }
+        Item {
+            id: mediaPanel
 
-        Image {
-            id: remoteImage
-            anchors.fill: parent
-            anchors.margins: 10
-            fillMode: Image.PreserveAspectFit
-            visible: presentation.remoteAvailable &&
-                     !presentation.currentIsVideo
-            cache: false
-        }
+            anchors.left: leftPanel.right
+            anchors.right: parent.right
+            anchors.top: parent.top
+            anchors.bottom: parent.bottom
 
-        VideoOutput {
-            id: videoOutput
-            anchors.fill: parent
-            anchors.margins: 10
-            visible: presentation.remoteAvailable &&
-                     presentation.currentIsVideo
-            fillMode: VideoOutput.PreserveAspectFit
+            Image {
+                id: fallbackImage
+
+                source: "slide1.png"
+
+                anchors.fill: parent
+                anchors.margins: 10
+
+                fillMode:
+                    Image.PreserveAspectFit
+
+                visible:
+                    !presentation.remoteAvailable
+            }
+
+            Image {
+                id: remoteImage
+
+                anchors.fill: parent
+                anchors.margins: 10
+
+                fillMode:
+                    Image.PreserveAspectFit
+
+                visible:
+                    presentation.remoteAvailable &&
+                    !presentation.currentIsVideo
+
+                cache: false
+            }
+
+            VideoOutput {
+                id: videoOutput
+
+                anchors.fill: parent
+                anchors.margins: 10
+
+                visible:
+                    presentation.remoteAvailable &&
+                    presentation.currentIsVideo
+
+                fillMode:
+                    VideoOutput.PreserveAspectFit
+            }
         }
     }
 }

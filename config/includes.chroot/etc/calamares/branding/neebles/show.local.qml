@@ -1,8 +1,7 @@
-import QtQuick 2.0;
-import calamares.slideshow 1.0;
+import QtQuick 2.0
+import calamares.slideshow 1.0
 
-Presentation
-{
+Presentation {
     id: presentation
     anchors.fill: parent
 
@@ -12,30 +11,32 @@ Presentation
         z: -100
     }
 
-    Timer {
-        interval: 20000
-        repeat: true
-        onTriggered: presentation.goToNextSlide()
-    }
-
     Slide {
-        Image {
-            id: background1
-            source: "slide1.png"
-            width: 467
-            height: 280
-            fillMode: Image.PreserveAspectFit
-            anchors.centerIn: parent
+        Item {
+            id: leftPanel
+
+            anchors.left: parent.left
+            anchors.top: parent.top
+            anchors.bottom: parent.bottom
+
+            width: parent.width * 0.25
         }
 
-        Text {
-            anchors.horizontalCenter: background1.horizontalCenter
-            anchors.top: background1.bottom
-            text: qsTr("Welcome to N.E.E.B.L.E.S. OS.<br/>The installation should complete in a few minutes.")
-            wrapMode: Text.WordWrap
-            width: 600
-            horizontalAlignment: Text.Center
-            color: "#F5F5F5"
+        Item {
+            anchors.left: leftPanel.right
+            anchors.right: parent.right
+            anchors.top: parent.top
+            anchors.bottom: parent.bottom
+
+            Image {
+                source: "slide1.png"
+
+                anchors.fill: parent
+                anchors.margins: 10
+
+                fillMode:
+                    Image.PreserveAspectFit
+            }
         }
     }
 }
