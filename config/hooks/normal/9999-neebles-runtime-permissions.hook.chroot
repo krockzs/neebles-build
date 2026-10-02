@@ -47,5 +47,5 @@ install -d -o root -g root -m 0755 /opt/neebles-build/modules/rootfs
 install -d -o root -g root -m 0755 /usr/lib/neebles/domestic
 install -d -o root -g root -m 0755 /usr/lib/neebles/domestic/construction
 rm -f /usr/lib/neebles/domestic/construction/.gitkeep
-find /usr/lib/neebles/domestic/construction -maxdepth 1 -type f -name '*.json' -exec chown root:root {} ;
-find /usr/lib/neebles/domestic/construction -maxdepth 1 -type f -name '*.json' -exec chmod 0644 {} ;
+find /usr/lib/neebles/domestic/construction -maxdepth 1 -type f -name '*.json' -exec chown root:root {} \;
+find /usr/lib/neebles/domestic/construction -maxdepth 1 -type f -name '*.json' -exec chmod 0644 {} \;
