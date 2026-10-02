@@ -2,6 +2,7 @@
 
 import json
 import os
+import re
 import signal
 import threading
 import time
@@ -9,6 +10,7 @@ from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 import urllib.error
 import urllib.request
 from pathlib import Path
+
 
 BASE_URL = "https://raw.githubusercontent.com/krockzs/neebles-os/main/calamares/slides"
 
@@ -26,18 +28,38 @@ MEDIA_EXTENSIONS = IMAGE_EXTENSIONS + VIDEO_EXTENSIONS
 
 MAX_IMAGE_SIZE = 4 * 1024 * 1024
 MAX_VIDEO_SIZE = 100 * 1024 * 1024
+MAX_TEXT_SIZE = 64 * 1024
 
-RETRY_SECONDS = 3
 ONLINE_CHECK_TIMEOUT = 2
 DOWNLOAD_TIMEOUT = 120
+SYNC_RETRY_SECONDS = 15
 
 HTTP_HOST = "127.0.0.1"
 HTTP_PORT = 28765
 
 CHUNK_SIZE = 1024 * 1024
 
+LOCALE_HEADER_RE = re.compile(
+    r"^[a-z]{2,3}(?:_[A-Za-z0-9]+)?$"
+)
+
+TAG_RE = re.compile(r"\[(/?)([A-Za-z][A-Za-z0-9_-]*)\]")
+
+ALLOWED_CONTENT_TAGS = {
+    "heading",
+    "body",
+    "highlight",
+    "b",
+    "i",
+    "u",
+}
 
 running = True
+prepare_lock = threading.Lock()
+state_lock = threading.Lock()
+
+replaced_slots = set()
+text_checked_slots = set()
 
 
 def stop(signum, frame):
@@ -53,108 +75,97 @@ def max_size_for(extension):
     if extension in VIDEO_EXTENSIONS:
         return MAX_VIDEO_SIZE
 
+    if extension == "txt":
+        return MAX_TEXT_SIZE
+
     return MAX_IMAGE_SIZE
 
 
-def fetch_slot(number, extension, timeout):
-    url = f"{BASE_URL}/{number}.{extension}"
-    max_size = max_size_for(extension)
+def remote_url(number, extension):
+    return f"{BASE_URL}/{number}.{extension}"
 
+
+def open_remote(number, extension, timeout):
     request = urllib.request.Request(
-        url,
-        headers={"User-Agent": "NEEBLES-Calamares/1.0.4"}
+        remote_url(number, extension),
+        headers={"User-Agent": "NEEBLES-Calamares/1.0.6"}
     )
 
     try:
-        response = urllib.request.urlopen(request, timeout=timeout)
+        response = urllib.request.urlopen(
+            request,
+            timeout=timeout
+        )
 
         if response.status != 200:
             response.close()
-            return None
+            return "missing", None
 
         length = response.headers.get("Content-Length")
+        max_size = max_size_for(extension)
 
         if length and int(length) > max_size:
             response.close()
-            return None
+            return "invalid", None
 
-        return response
+        return "ok", response
+
+    except urllib.error.HTTPError as error:
+        if error.code == 404:
+            return "missing", None
+
+        return "error", None
 
     except (
-        urllib.error.HTTPError,
         urllib.error.URLError,
         TimeoutError,
         OSError
     ):
-        return None
+        return "error", None
 
 
-def download_slot(number, extension):
-    max_size = max_size_for(extension)
-    destination = RUNTIME_DIR / f"{number}.{extension}"
-    temporary = RUNTIME_DIR / f".{number}.{extension}.tmp"
-
-    response = fetch_slot(number, extension, DOWNLOAD_TIMEOUT)
-
-    if response is None:
-        return False
-
-    total = 0
-
-    try:
-        with response:
-            with temporary.open("wb") as output:
-                while running:
-                    chunk = response.read(CHUNK_SIZE)
-
-                    if not chunk:
-                        break
-
-                    total += len(chunk)
-
-                    if total > max_size:
-                        output.close()
-                        temporary.unlink(missing_ok=True)
-                        return False
-
-                    output.write(chunk)
-
-        if not running:
-            temporary.unlink(missing_ok=True)
-            return False
-
-        if total == 0:
-            temporary.unlink(missing_ok=True)
-            return False
-
-        for old_extension in MEDIA_EXTENSIONS:
-            if old_extension == extension:
-                continue
-
-            old_file = RUNTIME_DIR / f"{number}.{old_extension}"
-            old_file.unlink(missing_ok=True)
-
-        os.replace(temporary, destination)
-
-        return True
-
-    except (OSError, ValueError):
-        temporary.unlink(missing_ok=True)
-        return False
-
-def find_remote(number, timeout):
+def find_remote_media(number):
     for extension in MEDIA_EXTENSIONS:
-        response = fetch_slot(number, extension, timeout)
+        status, response = open_remote(
+            number,
+            extension,
+            ONLINE_CHECK_TIMEOUT
+        )
 
-        if response is not None:
+        if status == "ok":
             try:
                 response.close()
             except Exception:
                 pass
 
+            return extension, "ok"
+
+        if status == "error":
+            return None, "error"
+
+    return None, "missing"
+
+
+def local_media_extension(number):
+    for extension in MEDIA_EXTENSIONS:
+        candidate = RUNTIME_DIR / f"{number}.{extension}"
+
+        if candidate.is_file():
             return extension
 
     return None
+
+
+def local_slots():
+    result = []
+
+    for number in range(1, MAX_SLIDES + 1):
+        extension = local_media_extension(number)
+
+        if extension is not None:
+            result.append((number, extension))
+
+    return result
 
 
 def read_active_slot():
@@ -173,38 +184,241 @@ def read_active_slot():
     return None
 
 
-def download_next(replaced_slots):
-    global last_prepared_slot
+def validate_text_bytes(data):
+    if not data or len(data) > MAX_TEXT_SIZE:
+        return False
 
-    active_slot = read_active_slot()
+    try:
+        text = data.decode("utf-8")
+    except UnicodeDecodeError:
+        return False
 
-    if last_prepared_slot is not None:
-        start = (last_prepared_slot % MAX_SLIDES) + 1
-    else:
-        start = 1
+    locale_count = 0
+    stack = []
 
-    for offset in range(MAX_SLIDES):
-        number = ((start - 1 + offset) % MAX_SLIDES) + 1
+    for raw_line in text.splitlines():
+        line = raw_line.strip()
 
-        if number == active_slot:
+        if (
+            line.startswith("[") and
+            line.endswith("]") and
+            LOCALE_HEADER_RE.fullmatch(line[1:-1])
+        ):
+            if stack:
+                return False
+
+            locale_count += 1
             continue
 
-        extension = find_remote(number, ONLINE_CHECK_TIMEOUT)
+        for match in TAG_RE.finditer(line):
+            closing = match.group(1) == "/"
+            name = match.group(2).lower()
 
-        if extension is None:
+            if LOCALE_HEADER_RE.fullmatch(name):
+                continue
+
+            if name not in ALLOWED_CONTENT_TAGS:
+                return False
+
+            if closing:
+                if not stack or stack[-1] != name:
+                    return False
+
+                stack.pop()
+            else:
+                stack.append(name)
+
+    return locale_count > 0 and not stack
+
+
+def stage_resource(number, extension):
+    status, response = open_remote(
+        number,
+        extension,
+        DOWNLOAD_TIMEOUT
+    )
+
+    if status != "ok":
+        return status, None
+
+    max_size = max_size_for(extension)
+    temporary = RUNTIME_DIR / f".{number}.{extension}.tmp"
+
+    data = bytearray()
+
+    try:
+        with response:
+            while running:
+                chunk = response.read(CHUNK_SIZE)
+
+                if not chunk:
+                    break
+
+                data.extend(chunk)
+
+                if len(data) > max_size:
+                    temporary.unlink(missing_ok=True)
+                    return "invalid", None
+
+        if not running or not data:
+            temporary.unlink(missing_ok=True)
+            return "invalid", None
+
+        if extension == "txt" and not validate_text_bytes(bytes(data)):
+            temporary.unlink(missing_ok=True)
+            return "invalid", None
+
+        temporary.write_bytes(bytes(data))
+
+        return "ok", temporary
+
+    except OSError:
+        temporary.unlink(missing_ok=True)
+        return "error", None
+
+
+def publish_media(number, extension, temporary):
+    for old_extension in MEDIA_EXTENSIONS:
+        if old_extension == extension:
             continue
 
-        active_slot = read_active_slot()
+        old_file = RUNTIME_DIR / f"{number}.{old_extension}"
+        old_file.unlink(missing_ok=True)
 
-        if number == active_slot:
-            continue
+    destination = RUNTIME_DIR / f"{number}.{extension}"
+    os.replace(temporary, destination)
 
-        if download_slot(number, extension):
-            replaced_slots.add(number)
-            last_prepared_slot = number
-            return number, extension
 
-    return None
+def publish_text(number, temporary):
+    destination = RUNTIME_DIR / f"{number}.txt"
+    os.replace(temporary, destination)
+
+
+def sync_slot(number):
+    if number == read_active_slot():
+        return "skip"
+
+    existing_extension = local_media_extension(number)
+    media_extension = existing_extension
+    media_temporary = None
+
+    if existing_extension is None:
+        media_extension, media_status = find_remote_media(number)
+
+        if media_status == "error":
+            return "network"
+
+        if media_extension is None:
+            return "missing"
+
+        media_status, media_temporary = stage_resource(
+            number,
+            media_extension
+        )
+
+        if media_status != "ok":
+            return media_status
+
+    text_temporary = None
+    text_status = "unchecked"
+
+    with state_lock:
+        text_already_checked = number in text_checked_slots
+
+    if not text_already_checked:
+        text_status, text_temporary = stage_resource(
+            number,
+            "txt"
+        )
+
+        if text_status in ("missing", "invalid"):
+            with state_lock:
+                text_checked_slots.add(number)
+
+        elif text_status == "ok":
+            pass
+
+        elif text_status == "error":
+            text_temporary = None
+
+    if number == read_active_slot():
+        if media_temporary is not None:
+            media_temporary.unlink(missing_ok=True)
+
+        if text_temporary is not None:
+            text_temporary.unlink(missing_ok=True)
+
+        return "skip"
+
+    try:
+        if text_temporary is not None:
+            publish_text(number, text_temporary)
+
+            with state_lock:
+                text_checked_slots.add(number)
+                replaced_slots.add(number)
+
+        if media_temporary is not None:
+            publish_media(
+                number,
+                media_extension,
+                media_temporary
+            )
+
+            with state_lock:
+                replaced_slots.add(number)
+
+        return "ok"
+
+    except OSError:
+        if media_temporary is not None:
+            media_temporary.unlink(missing_ok=True)
+
+        if text_temporary is not None:
+            text_temporary.unlink(missing_ok=True)
+
+        return "error"
+
+
+def sync_worker():
+    while running:
+        network_failed = False
+
+        for number in range(1, MAX_SLIDES + 1):
+            if not running:
+                return
+
+            result = sync_slot(number)
+
+            if result == "network":
+                network_failed = True
+                break
+
+            time.sleep(0.05)
+
+        if not running:
+            return
+
+        if network_failed:
+            time.sleep(3)
+        else:
+            time.sleep(SYNC_RETRY_SECONDS)
+
+
+def next_local_after(number):
+    slots = local_slots()
+
+    if not slots:
+        return None
+
+    if number is None:
+        return slots[0]
+
+    for slot_number, extension in slots:
+        if slot_number > number:
+            return slot_number, extension
+
+    return slots[0]
 
 
 class RuntimeHandler(BaseHTTPRequestHandler):
@@ -222,13 +436,39 @@ class RuntimeHandler(BaseHTTPRequestHandler):
         self.end_headers()
         self.wfile.write(data)
 
+    def send_text(self, status, text):
+        data = text.encode("utf-8")
+
+        self.send_response(status)
+        self.send_header(
+            "Content-Type",
+            "text/plain; charset=utf-8"
+        )
+        self.send_header(
+            "Content-Length",
+            str(len(data))
+        )
+        self.send_header(
+            "Cache-Control",
+            "no-store"
+        )
+        self.end_headers()
+        self.wfile.write(data)
+
     def do_GET(self):
         path = self.path.split("?", 1)[0]
 
         if path == "/state":
+            with state_lock:
+                replaced = sorted(replaced_slots)
+
             self.send_json(200, {
                 "active_slot": read_active_slot(),
-                "replaced_slots": sorted(replaced_slots),
+                "replaced_slots": replaced,
+                "local_slots": [
+                    number
+                    for number, extension in local_slots()
+                ],
                 "max_slots": MAX_SLIDES
             })
             return
@@ -237,13 +477,19 @@ class RuntimeHandler(BaseHTTPRequestHandler):
             value = path.rsplit("/", 1)[-1]
 
             if not value.isdigit():
-                self.send_json(400, {"error": "invalid_slot"})
+                self.send_json(
+                    400,
+                    {"error": "invalid_slot"}
+                )
                 return
 
             number = int(value)
 
             if not 1 <= number <= MAX_SLIDES:
-                self.send_json(400, {"error": "invalid_slot"})
+                self.send_json(
+                    400,
+                    {"error": "invalid_slot"}
+                )
                 return
 
             ACTIVE_SLOT_FILE.write_text(str(number))
@@ -253,17 +499,54 @@ class RuntimeHandler(BaseHTTPRequestHandler):
             })
             return
 
+        if path.startswith("/text/"):
+            value = path.rsplit("/", 1)[-1]
+
+            if not value.isdigit():
+                self.send_json(
+                    400,
+                    {"error": "invalid_slot"}
+                )
+                return
+
+            number = int(value)
+
+            if not 1 <= number <= MAX_SLIDES:
+                self.send_json(
+                    400,
+                    {"error": "invalid_slot"}
+                )
+                return
+
+            text_file = RUNTIME_DIR / f"{number}.txt"
+
+            try:
+                text = text_file.read_text(
+                    encoding="utf-8"
+                )
+            except (
+                OSError,
+                UnicodeDecodeError
+            ):
+                self.send_json(
+                    404,
+                    {"error": "text_not_available"}
+                )
+                return
+
+            self.send_text(200, text)
+            return
+
         if path == "/prepare":
             with prepare_lock:
-                active_slot = read_active_slot()
-
-                prepared = download_next(replaced_slots)
+                prepared = next_local_after(
+                    read_active_slot()
+                )
 
                 if prepared is None:
                     self.send_json(200, {
                         "prepared": False,
-                        "active_slot": active_slot,
-                        "replaced_slots": sorted(replaced_slots)
+                        "active_slot": read_active_slot()
                     })
                     return
 
@@ -273,19 +556,25 @@ class RuntimeHandler(BaseHTTPRequestHandler):
                     "prepared": True,
                     "slot": slot,
                     "extension": extension,
-                    "active_slot": read_active_slot(),
-                    "replaced_slots": sorted(replaced_slots)
+                    "active_slot": read_active_slot()
                 })
             return
 
-        self.send_json(404, {"error": "not_found"})
+        self.send_json(
+            404,
+            {"error": "not_found"}
+        )
 
 
-prepare_lock = threading.Lock()
+RUNTIME_BASE.mkdir(
+    parents=True,
+    exist_ok=True
+)
 
-
-RUNTIME_BASE.mkdir(parents=True, exist_ok=True)
-RUNTIME_DIR.mkdir(parents=True, exist_ok=True)
+RUNTIME_DIR.mkdir(
+    parents=True,
+    exist_ok=True
+)
 
 os.chmod(RUNTIME_BASE, 0o755)
 os.chmod(RUNTIME_DIR, 0o755)
@@ -293,25 +582,23 @@ os.chmod(RUNTIME_DIR, 0o755)
 PID_FILE.write_text(str(os.getpid()))
 ACTIVE_SLOT_FILE.unlink(missing_ok=True)
 
-replaced_slots = set()
-last_prepared_slot = None
-
 server = ThreadingHTTPServer(
     (HTTP_HOST, HTTP_PORT),
     RuntimeHandler
 )
+
 server.timeout = 1
 
-try:
-    download_next(replaced_slots)
-    next_retry = time.monotonic() + RETRY_SECONDS
+sync_thread = threading.Thread(
+    target=sync_worker,
+    daemon=True
+)
 
+sync_thread.start()
+
+try:
     while running:
         server.handle_request()
-
-        if not replaced_slots and time.monotonic() >= next_retry:
-            download_next(replaced_slots)
-            next_retry = time.monotonic() + RETRY_SECONDS
 
 finally:
     server.server_close()

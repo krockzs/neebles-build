@@ -352,7 +352,10 @@ def run():
 
     enable_swap_partition(swap_devices)
 
-    root_mount_point = tempfile.mkdtemp(prefix="calamares-root-")
+    neebles_target_base = "/run/neebles/calamares/target"
+    os.makedirs(neebles_target_base, mode=0o700, exist_ok=True)
+    os.chmod(neebles_target_base, 0o700)
+    root_mount_point = tempfile.mkdtemp(prefix="root-", dir=neebles_target_base)
 
     # Get the mountOptions, if this is None, that is OK and will be handled later
     mount_options = libcalamares.job.configuration.get("mountOptions")
