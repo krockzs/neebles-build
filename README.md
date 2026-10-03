@@ -231,3 +231,200 @@ Point 8 is **GREEN / CLOSED** and **BOSS CONTRACT CLOSED** is now **YES**.
 This does not claim that the final N.E.E.B.L.E.S. image has already completed real machine/VM acceptance. Installed-system behavior remains for the dedicated VM phase.
 
 Generated build products, caches and temporary workspaces are not canonical source.
+
+---
+
+## Operational build and media recipe
+
+This section records the current productive build procedure.
+
+Source/build certification and real Live acceptance are separate gates.
+
+### Certified Boss baseline
+
+Current certified Boss release:
+
+- Boss version: `1.0.18`
+- Boss source commit: `73a21c253f7335b9c1e0947cc854b6a3188d61c6`
+- certified CUSTOM revision: `4b7397700d18c65d1b0852c09494df45213f69d4`
+- controlled Qt build world: `6.8.2`
+
+Published Boss 1.0.18 SHA256:
+
+```text
+bootstrap.json  15807a27915650acd50cd444c4f6e20fb183265e3f64528e79eebd27b87d269e
+boss-runtime.tar.gz  9eda9b502c33f19d6cab5cd07ee3feb60dede4f1da7427d018c5dbe69e4a4c3b
+client-data.tar.gz  1b98d333545c44ed4127da544d4b14c0918ed505cc0a84685e19cb9a24127a3e
+critical-update-manifest.json  37517e5f3dc66819f61f5a7bb8ace1921282415f10551d2defa5c3eb0985b570
+install.sh  7607f63eb3cb90537b336a3e212def14a179c58ae1654ee36839a23e6c265a34
+neebles-auth-agent  da272cfedf4ab0ee4054740db1d3cf742983b54327eab5f7cb63d05336573100
+neebles-backend  b2ddec3359e1c7da4c9b8f116120c9a09566e2c629086877f93950cce75c0eb2
+neebles-installer  17dab2e0db5fd804a90cd86db6c609a6dc5cb306010222c7fd6bd6b4f945a40b
+neebles-runtime-resolve  27d5b4c380659bb120b430622914d0d8f38b4b1e997c1b279fa7924a2fa4fa26
+neebles-ui  0e6c344c5fc91a98864dd1046128e4648d3a35d860c149fb2e94c1ba2820db85
+SHA256SUMS  7ea7971247390e91c7fdee1f783098031b54e08654d7757619c11788e330f4ce
+```
+
+These hashes belong specifically to the published Boss 1.0.18 release.
+
+### How Boss is compiled against certified CUSTOM material
+
+Boss is not compiled against an arbitrary host Qt installation.
+
+The certified Boss release build consumes the exact CUSTOM revision declared by the release workflow.
+
+Controlled build material:
+
+```text
+neebles-custom/qt_6.8.2
+neebles-custom/runtime/boss/rootfs
+neebles-custom/runtime/manifests/boss.rootfs.tsv
+neebles-custom/boss_current_manifest.json
+```
+
+The certified sequence is:
+
+```text
+1. Checkout the exact Boss source revision.
+2. Checkout the exact certified CUSTOM revision.
+3. Load CUSTOM controlled Qt 6.8.2 material.
+4. Verify the Qt package snapshot with its SHA256SUMS.
+5. Install the controlled Qt 6.8.2 build material.
+6. Resolve the controlled Qt6 CMake package.
+7. Verify certified CUSTOM Boss runtime inputs.
+8. Build the Rust release binaries.
+9. Build the static musl neebles-runtime-resolve bootstrap resolver.
+10. Build Boss UI.
+11. Build installer UI.
+12. Build authorization agent.
+13. Build Plasma launcher plugin.
+14. Build Qt tray host.
+15. Materialize the domestic Boss runtime manifest.
+16. Rehydrate manifest-declared empty runtime directories.
+17. Package and certify boss-runtime.tar.gz.
+18. Materialize the complete release payload.
+19. Verify the complete release payload.
+20. Generate SHA256SUMS.
+21. Publish the versioned Boss release.
+```
+
+CUSTOM owns and certifies the controlled physical material.
+
+Boss consumes that controlled material during its certified build.
+
+BUILD does not become the Boss compiler authority. BUILD materializes the resulting certified product into the image.
+
+### Boss productive house inside BUILD
+
+The productive Boss image-side house is:
+
+```text
+/opt/neebles-build/boss
+/opt/neebles-build/boss/packages
+/opt/neebles-build/boss/rootfs
+```
+
+The corresponding BUILD source territory is:
+
+```text
+config/includes.chroot/opt/neebles-build/boss
+config/includes.chroot/opt/neebles-build/boss/packages
+config/includes.chroot/opt/neebles-build/boss/rootfs
+```
+
+CUSTOM remains owner of the certified domestic Boss corpus.
+
+BUILD only materializes the image-side copy.
+
+### Calamares productive house
+
+Calamares is independent from Boss.
+
+The productive image-side house is:
+
+```text
+/opt/neebles-build/calamares
+/opt/neebles-build/calamares/packages
+/opt/neebles-build/calamares/rootfs
+```
+
+The canonical certified source remains CUSTOM:
+
+```text
+neebles-custom/runtime/calamares/packages
+neebles-custom/runtime/calamares/rootfs
+neebles-custom/runtime/manifests/calamares.packages.tsv
+neebles-custom/runtime/manifests/calamares.rootfs.tsv
+neebles-custom/calamares_current_manifest.json
+```
+
+Boss and Calamares remain separate domestic runtime corpora.
+
+### Canonical full ISO build
+
+The normal clean N.E.E.B.L.E.S. image build recipe is:
+
+```bash
+cd ~/NEEBLES/neebles-build
+sudo lb clean --chroot
+sudo lb clean --binary
+sudo rm -rf .build
+sudo lb config
+sudo env WGET_OPTIONS="--inet4-only --timeout=30 --tries=5" lb build
+```
+
+A successful live-build execution means the ISO was generated.
+
+It does not by itself certify Live behavior.
+
+### Identify the USB device before writing
+
+Never assume the destination device.
+
+Inspect connected block devices first:
+
+```bash
+lsblk -o NAME,MODEL,SIZE,TRAN,RM,MOUNTPOINTS
+```
+
+Identify the USB drive by model, size, transport and removable flag.
+
+Confirm again immediately before writing:
+
+```bash
+lsblk -o NAME,MODEL,SIZE,TRAN,RM,MOUNTPOINTS
+```
+
+Unmount every mounted partition belonging to that USB device before using dd.
+
+Example only after the real device has been positively identified:
+
+```text
+sudo umount /dev/DEVICE1
+sudo dd if=live-image-amd64.hybrid.iso of=/dev/DEVICE bs=4M status=progress conv=fsync
+sync
+```
+
+`DEVICE` must be replaced by the real whole USB block device identified with lsblk.
+
+Do not use a partition as the dd destination.
+
+Do not execute dd until the destination device has been positively identified.
+
+### Acceptance boundary
+
+After writing the ISO, the next gate is real Live acceptance:
+
+```text
+boot ISO or USB
+validate Live environment
+validate Calamares runtime
+validate Boss bootstrap
+validate authorization-agent path
+validate installation
+validate permanent domestic Boss runtime
+validate installed system
+```
+
+Only that real Live gate can close runtime acceptance.
+
