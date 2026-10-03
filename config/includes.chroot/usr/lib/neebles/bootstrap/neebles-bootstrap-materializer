@@ -1,0 +1,310 @@
+#!/usr/bin/env python3
+
+from pathlib import Path, PurePosixPath
+import argparse
+import hashlib
+import json
+import os
+import re
+import shutil
+import stat
+import subprocess
+import sys
+import tarfile
+import tempfile
+
+BASE = Path("/opt/neebles-bootstrap")
+BOOTSTRAP_URL = "https://github.com/krockzs/neebles-boss/releases/latest/download/bootstrap.json"
+RELEASE_PREFIX = "https://github.com/krockzs/neebles-boss/releases/download/"
+REQUIRED = (
+    "backend",
+    "ui",
+    "installer",
+    "auth_agent",
+    "client_data",
+    "install",
+    "runtime_resolver",
+    "runtime_archive",
+)
+EXECUTABLE = {
+    "backend",
+    "ui",
+    "installer",
+    "auth_agent",
+    "install",
+    "runtime_resolver",
+}
+
+def fail(message):
+    print("neebles-bootstrap-materializer: " + message, file=sys.stderr)
+    raise SystemExit(64)
+
+def require_root():
+    if os.geteuid() != 0:
+        fail("root authority required")
+
+def download(url, target, timeout):
+    result = subprocess.run(
+        [
+            "/usr/bin/curl",
+            "-LfsS",
+            "--proto",
+            "=https",
+            "--tlsv1.2",
+            "--connect-timeout",
+            "4",
+            "--max-time",
+            str(timeout),
+            url,
+            "-o",
+            str(target),
+        ],
+        check=False,
+    )
+    if result.returncode != 0:
+        fail("download failed: " + url)
+    os.chown(target, 0, 0)
+    os.chmod(target, 0o600)
+
+def sha256(path):
+    digest = hashlib.sha256()
+    with path.open("rb") as handle:
+        while True:
+            chunk = handle.read(1024 * 1024)
+            if not chunk:
+                break
+            digest.update(chunk)
+    return digest.hexdigest()
+
+def load_bootstrap(path):
+    try:
+        data = json.loads(path.read_text(encoding="utf-8"))
+    except Exception as error:
+        fail("invalid bootstrap JSON: " + repr(error))
+
+    if data.get("schema") != 2 or data.get("channel") != "stable":
+        fail("unsupported Boss bootstrap contract")
+
+    stable = data.get("stable")
+    if not isinstance(stable, dict):
+        fail("Boss stable contract missing")
+
+    version = stable.get("version")
+    base_url = stable.get("base_url")
+    assets = stable.get("assets")
+
+    if not isinstance(version, str) or not re.fullmatch(r"\d+\.\d+\.\d+", version):
+        fail("invalid Boss stable version")
+
+    if not isinstance(base_url, str) or not base_url.startswith(RELEASE_PREFIX):
+        fail("invalid Boss release base URL")
+
+    if not isinstance(assets, dict):
+        fail("Boss asset map missing")
+
+    validated = {}
+    filenames = set()
+
+    for asset_id in REQUIRED:
+        asset = assets.get(asset_id)
+        if not isinstance(asset, dict):
+            fail("missing Boss asset: " + asset_id)
+
+        filename = asset.get("file")
+        expected = asset.get("sha256")
+
+        if not isinstance(filename, str) or not filename or Path(filename).name != filename:
+            fail("invalid Boss asset filename: " + asset_id)
+
+        if filename in filenames:
+            fail("duplicate Boss asset filename: " + filename)
+
+        filenames.add(filename)
+
+        if not isinstance(expected, str) or not re.fullmatch(r"[0-9a-fA-F]{64}", expected):
+            fail("invalid Boss asset SHA-256: " + asset_id)
+
+        validated[asset_id] = (filename, expected.lower())
+
+    return version, base_url.rstrip("/"), validated
+
+def validate_archive(path):
+    with tarfile.open(path, mode="r:gz") as archive:
+        members = archive.getmembers()
+
+        if not members:
+            fail("runtime archive is empty")
+
+        names = {member.name for member in members}
+
+        if "domestic-runtime.json" not in names:
+            fail("runtime archive lacks domestic-runtime.json")
+
+        if not any(name == "rootfs" or name.startswith("rootfs/") for name in names):
+            fail("runtime archive lacks rootfs")
+
+        for member in members:
+            pure = PurePosixPath(member.name)
+
+            if pure.is_absolute() or ".." in pure.parts:
+                fail("unsafe runtime archive path: " + member.name)
+
+            if not (member.isdir() or member.isfile() or member.issym()):
+                fail("unsupported runtime archive member: " + member.name)
+
+def extract_runtime(archive_path, destination):
+    destination.mkdir(mode=0o755, parents=False, exist_ok=False)
+
+    result = subprocess.run(
+        [
+            "/usr/bin/tar",
+            "--extract",
+            "--gzip",
+            "--numeric-owner",
+            "--same-owner",
+            "--preserve-permissions",
+            "--file",
+            str(archive_path),
+            "--directory",
+            str(destination),
+        ],
+        check=False,
+    )
+
+    if result.returncode != 0:
+        fail("runtime archive extraction failed")
+
+def certify_runtime(session, assets):
+    runtime_authority = session / "runtime-authority"
+    manifest = runtime_authority / "domestic-runtime.json"
+    pkexec = runtime_authority / "rootfs/usr/bin/pkexec"
+    resolver = assets["runtime_resolver"]
+
+    if not manifest.is_file():
+        fail("materialized runtime manifest missing")
+
+    if not pkexec.is_file():
+        fail("materialized boss.pkexec missing")
+
+    info = pkexec.stat()
+
+    if info.st_uid != 0 or info.st_gid != 0:
+        fail("materialized boss.pkexec ownership is not root:root")
+
+    if stat.S_IMODE(info.st_mode) != 0o4755:
+        fail("materialized boss.pkexec mode is not 4755")
+
+    probe = subprocess.run(
+        ["/usr/bin/findmnt", "-n", "-o", "OPTIONS", "-T", str(pkexec)],
+        text=True,
+        capture_output=True,
+        check=False,
+    )
+
+    if probe.returncode != 0:
+        fail("could not inspect bootstrap staging mount")
+
+    options = {item.strip() for item in probe.stdout.strip().split(",") if item.strip()}
+
+    if "nosuid" in options:
+        fail("bootstrap staging filesystem is nosuid")
+
+    resolver_probe = subprocess.run(
+        [
+            str(resolver),
+            "--manifest",
+            str(manifest),
+            "--world",
+            "boss.pkexec",
+            "--category",
+            "executable",
+        ],
+        text=True,
+        capture_output=True,
+        check=False,
+    )
+
+    if resolver_probe.returncode != 0:
+        fail("runtime resolver cannot resolve boss.pkexec")
+
+def materialize(expected_version):
+    BASE.mkdir(mode=0o711, parents=True, exist_ok=True)
+    os.chown(BASE, 0, 0)
+    os.chmod(BASE, 0o711)
+
+    session = Path(tempfile.mkdtemp(prefix="session-", dir=str(BASE)))
+    os.chown(session, 0, 0)
+    os.chmod(session, 0o700)
+
+    try:
+        bootstrap = session / "bootstrap.json"
+        download(BOOTSTRAP_URL, bootstrap, 20)
+
+        version, base_url, contract = load_bootstrap(bootstrap)
+
+        if expected_version is not None and version != expected_version:
+            fail("Boss stable version changed during bootstrap: " + expected_version + " -> " + version)
+        os.chmod(bootstrap, 0o644)
+
+        assets = {}
+
+        for asset_id in REQUIRED:
+            filename, expected = contract[asset_id]
+            target = session / filename
+
+            download(base_url + "/" + filename, target, 120)
+
+            if sha256(target) != expected:
+                fail("SHA-256 mismatch for " + filename)
+
+            assets[asset_id] = target
+
+        for asset_id, path in assets.items():
+            os.chmod(path, 0o755 if asset_id in EXECUTABLE else 0o644)
+
+        validate_archive(assets["runtime_archive"])
+        extract_runtime(assets["runtime_archive"], session / "runtime-authority")
+        certify_runtime(session, assets)
+
+        os.chmod(session, 0o755)
+        os.chmod(session / "runtime-authority", 0o755)
+
+        print(version + "\t" + str(session))
+
+    except BaseException:
+        shutil.rmtree(session, ignore_errors=True)
+        raise
+
+def cleanup(session):
+    try:
+        resolved = session.resolve(strict=True)
+        base = BASE.resolve(strict=True)
+    except FileNotFoundError:
+        return
+
+    if resolved.parent != base or not resolved.name.startswith("session-"):
+        fail("refusing cleanup outside bootstrap base")
+
+    shutil.rmtree(resolved)
+
+def main():
+    parser = argparse.ArgumentParser()
+    sub = parser.add_subparsers(dest="command", required=True)
+
+    materialize_parser = sub.add_parser("materialize")
+    materialize_parser.add_argument("--expected-version")
+
+    clean = sub.add_parser("cleanup")
+    clean.add_argument("--session", required=True)
+
+    args = parser.parse_args()
+
+    require_root()
+
+    if args.command == "materialize":
+        materialize(args.expected_version)
+    else:
+        cleanup(Path(args.session))
+
+if __name__ == "__main__":
+    main()
