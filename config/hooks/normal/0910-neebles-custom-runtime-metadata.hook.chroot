@@ -1,0 +1,5 @@
+#!/bin/sh
+set -eu
+
+/usr/lib/neebles/build/apply-custom-runtime-metadata.py boss
+/usr/lib/neebles/build/apply-custom-runtime-metadata.py calamares

@@ -79,6 +79,51 @@ N.E.E.B.L.E.S. CUSTOM owns the certified domestic Boss runtime corpus.
 
 BUILD carries the image-side materialization required by the OS build.
 
+## CUSTOM runtime metadata materialization
+
+CUSTOM owns the canonical integrity and effective installed metadata of the Boss and Calamares domestic corpora.
+
+BUILD carries an image-side copy of each canonical current manifest:
+
+```text
+/opt/neebles-build/boss/current_manifest.json
+/opt/neebles-build/calamares/current_manifest.json
+```
+
+The corresponding source-side material is carried under:
+
+```text
+config/includes.chroot/opt/neebles-build/boss/current_manifest.json
+config/includes.chroot/opt/neebles-build/calamares/current_manifest.json
+```
+
+During image construction, BUILD applies CUSTOM-declared runtime modes generically through:
+
+```text
+/usr/lib/neebles/build/apply-custom-runtime-metadata.py
+config/hooks/normal/0910-neebles-custom-runtime-metadata.hook.chroot
+```
+
+The materializer is not a second permission authority. Before applying metadata to a regular file it verifies the manifest-declared type, size and SHA256. For symlinks it verifies the declared target and does not chmod the link. Missing, changed or type-mismatched material is fatal.
+
+The resulting law is:
+
+```text
+CUSTOM
+    -> owns certified bytes, integrity and effective installed modes
+
+BUILD
+    -> carries the certified manifest
+    -> verifies the material
+    -> materializes the declared modes
+```
+
+This replaces the former hard-coded runtime permission list in `9999-neebles-runtime-permissions.hook.chroot`. That hook is retired because it duplicated CUSTOM metadata and could drift into a second permission truth.
+
+`0900-neebles-build-territory.hook.chroot` remains separate. It owns only BUILD-created filesystem territory and its directory contract; it does not redefine metadata belonging to CUSTOM runtime corpora.
+
+This distinction is required because Git does not preserve the complete Unix mode semantics needed for privileged runtime files such as SUID entries. Repository transport therefore preserves the certified manifest, while BUILD reconstructs the effective runtime metadata deterministically during image materialization.
+
 ## Shared module territory
 
 BUILD owns the image-side filesystem territory used by domestic module material:
