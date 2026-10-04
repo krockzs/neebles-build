@@ -227,6 +227,10 @@ Synchronizer:
 scripts/sync-neebles-custom-construction.py
 ```
 
+The same synchronization transaction also materializes the canonical shared module runtime manifest from neebles-custom/runtime/modules/domestic-runtime.json into config/includes.chroot/opt/neebles-build/modules/domestic-runtime.json.
+
+The module runtime manifest remains CUSTOM-owned. BUILD validates its generic runtime contract, stages it, verifies byte parity, and publishes it into the image-side shared module territory.
+
 BUILD copies declarations opaquely.
 
 It does not parse or reinterpret:
@@ -248,7 +252,7 @@ Before a new integrated ISO:
 
 ```text
 1. synchronize current OS platform authority/providers
-2. synchronize current CUSTOM Construction declarations
+2. synchronize current CUSTOM Construction declarations and shared module runtime manifest
 3. synchronize current certified Boss/Calamares image material when required
 4. verify manifests and byte parity
 5. verify BUILD-created territory and modes

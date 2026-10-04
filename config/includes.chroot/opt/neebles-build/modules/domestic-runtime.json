@@ -1,0 +1,45 @@
+{
+  "schema": "1",
+  "name": "neebles-domestic-runtime",
+  "root": "rootfs",
+  "worlds": {
+    "modules.python3.13-tk": {
+      "categories": {
+        "executable": {
+          "category": "executable",
+          "value": "python3.13",
+          "declared_targets": [
+            "usr/bin/python3.13"
+          ],
+          "resolved_targets": [
+            "usr/bin/python3.13"
+          ]
+        },
+        "library_paths": {
+          "category": "library_paths",
+          "value": "python3.13-native-libraries",
+          "declared_targets": [
+            "usr/lib/x86_64-linux-gnu"
+          ],
+          "resolved_targets": [
+            "usr/lib/x86_64-linux-gnu"
+          ]
+        },
+        "runtime_paths": {
+          "category": "runtime_paths",
+          "value": "python3.13-tk-runtime",
+          "declared_targets": [
+            "usr/lib/python3.13",
+            "usr/lib/tcltk",
+            "usr/share/tcltk"
+          ],
+          "resolved_targets": [
+            "usr/lib/python3.13",
+            "usr/lib/tcltk",
+            "usr/share/tcltk"
+          ]
+        }
+      }
+    }
+  }
+}
