@@ -17,6 +17,10 @@ EXPECTED_AUTHORITY_FILES = {
     "platform.filesystem_boundary.json",
     "platform.desktop_session_interface.json",
     "system.dns_resolver_config.json",
+    "boss.modules.ipc.json",
+    "boss.runtime.json",
+    "modules.installed_runtime.json",
+    "modules.runtime.json",
 }
 
 EXPECTED_PROVIDERS = {
@@ -34,36 +38,28 @@ EXPECTED_DESKTOP_SESSION_PROVIDER_INSTALL_PATH = EXPECTED_PROVIDERS[
     "neebles-desktop-session-provider"
 ]
 
-EXPECTED_SUPPLY = {
-    "schema": "1",
-    "name": "neebles-authority-supply",
-    "entries": [
-        {
-            "authority": "platform.filesystem_boundary",
-            "location": "/usr/lib/neebles/platform/authority/platform.filesystem_boundary.json",
-        },
-        {
-            "authority": "system.dns_resolver_config",
-            "location": "/usr/lib/neebles/platform/authority/system.dns_resolver_config.json",
-        },
-        {
-            "authority": "boss.modules.install_staging",
-            "location": "/usr/lib/neebles/platform/authority/boss.modules.install_staging.json",
-        },
-        {
-            "authority": "boss.modules.update_staging",
-            "location": "/usr/lib/neebles/platform/authority/boss.modules.update_staging.json",
-        },
-        {
-            "authority": "neebles.domestic_workspace",
-            "location": "/usr/lib/neebles/platform/authority/neebles.domestic_workspace.json",
-        },
-        {
-            "authority": "platform.desktop_session_interface",
-            "location": "/usr/lib/neebles/platform/authority/platform.desktop_session_interface.json",
-        },
-    ],
-}
+EXPECTED_SUPPLY = {'schema': '1',
+ 'name': 'neebles-authority-supply',
+ 'entries': [{'authority': 'platform.filesystem_boundary',
+              'location': '/usr/lib/neebles/platform/authority/platform.filesystem_boundary.json'},
+             {'authority': 'system.dns_resolver_config',
+              'location': '/usr/lib/neebles/platform/authority/system.dns_resolver_config.json'},
+             {'authority': 'boss.modules.install_staging',
+              'location': '/usr/lib/neebles/platform/authority/boss.modules.install_staging.json'},
+             {'authority': 'boss.modules.update_staging',
+              'location': '/usr/lib/neebles/platform/authority/boss.modules.update_staging.json'},
+             {'authority': 'modules.installed_runtime',
+              'location': '/usr/lib/neebles/platform/authority/modules.installed_runtime.json'},
+             {'authority': 'neebles.domestic_workspace',
+              'location': '/usr/lib/neebles/platform/authority/neebles.domestic_workspace.json'},
+             {'authority': 'platform.desktop_session_interface',
+              'location': '/usr/lib/neebles/platform/authority/platform.desktop_session_interface.json'},
+             {'authority': 'boss.modules.ipc',
+              'location': '/usr/lib/neebles/platform/authority/boss.modules.ipc.json'},
+             {'authority': 'boss.runtime',
+              'location': '/usr/lib/neebles/platform/authority/boss.runtime.json'},
+             {'authority': 'modules.runtime',
+              'location': '/usr/lib/neebles/platform/authority/modules.runtime.json'}]}
 
 EXPECTED_PLATFORM = {
     "schema": "1",

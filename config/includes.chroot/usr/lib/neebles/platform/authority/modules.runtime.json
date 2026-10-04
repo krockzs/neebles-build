@@ -1,0 +1,6 @@
+{
+  "schema": "1",
+  "name": "neebles-runtime-manifest-authority",
+  "authority": "modules.runtime",
+  "manifest": "/opt/neebles-build/modules/domestic-runtime.json"
+}

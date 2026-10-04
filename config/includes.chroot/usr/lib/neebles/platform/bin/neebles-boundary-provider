@@ -26,6 +26,7 @@ def main():
     root = None
     readonly = []
     writable = []
+    environment = {}
     mount_proc = False
     mount_dev = False
     mount_tmp = False
@@ -45,6 +46,33 @@ def main():
                 fail("missing value for --root")
             root = clean_absolute(arguments[index + 1], "root")
             index += 2
+            continue
+
+        if value == "--environment":
+            if index + 2 >= len(arguments):
+                fail("missing values for --environment")
+
+            key = arguments[index + 1]
+            environment_value = arguments[index + 2]
+
+            if not key:
+                fail("environment key cannot be empty")
+
+            if not (
+                key.isascii()
+                and (key[0] == "_" or key[0].isalpha())
+                and all(
+                    character == "_" or character.isalnum()
+                    for character in key[1:]
+                )
+            ):
+                fail("invalid environment key: " + key)
+
+            if key in environment:
+                fail("duplicate environment key: " + key)
+
+            environment[key] = environment_value
+            index += 3
             continue
 
         if value in ("--readonly-data", "--writable-data"):
@@ -196,6 +224,34 @@ def main():
     if mount_tmp:
         backend_args.extend(['--tmpfs', '/tmp'])
 
+    destination_directories = set()
+
+    for source, destination in readonly + writable:
+        parent = destination.parent
+
+        while parent != Path("/") and parent != Path("."):
+            physical_parent = root / parent.relative_to("/")
+
+            if not physical_parent.exists() or (
+                mount_tmp
+                and len(parent.parts) >= 2
+                and parent.parts[1] == "tmp"
+            ):
+                destination_directories.add(parent)
+
+            parent = parent.parent
+
+    for directory in sorted(
+        destination_directories,
+        key=lambda path: (len(path.parts), str(path)),
+    ):
+        backend_args.extend(
+            [
+                "--dir",
+                str(directory),
+            ]
+        )
+
     for source, destination in readonly:
         backend_args.extend(['--ro-bind', str(source), str(destination)])
 
@@ -204,6 +260,15 @@ def main():
 
     backend_args.append('--clearenv')
 
+
+    for key in sorted(environment):
+        backend_args.extend(
+            [
+                "--setenv",
+                key,
+                environment[key],
+            ]
+        )
     if chdir is not None:
         backend_args.extend(['--chdir', str(chdir)])
 

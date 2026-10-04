@@ -1,0 +1,8 @@
+{
+  "schema": "1",
+  "name": "neebles-external-data-authority",
+  "authority": "boss.modules.ipc",
+  "source": "/run/neebles/modules.sock",
+  "destination": "/run/neebles/modules.sock",
+  "access": "read_only"
+}

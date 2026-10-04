@@ -14,6 +14,10 @@ OUTPUT_SCHEMA = "1"
 UID_KEY = "NEEBLES_DESKTOP_UID"
 GID_KEY = "NEEBLES_DESKTOP_GID"
 
+DISPLAY_KEY = "DISPLAY"
+WAYLAND_DISPLAY_KEY = "WAYLAND_DISPLAY"
+XAUTHORITY_KEY = "XAUTHORITY"
+
 
 def fail(message):
     print("neebles-desktop-session-provider: " + message, file=sys.stderr)
@@ -94,21 +98,110 @@ def inspect_session_bus(runtime_dir, uid):
     return bus
 
 
+def optional_graphical_values(runtime_dir, uid):
+    values = {}
+
+    display = os.environ.get(DISPLAY_KEY)
+
+    if display:
+        display = display.strip()
+
+        if not display.startswith(":"):
+            fail("DISPLAY must use local :N syntax")
+
+        number = display[1:].split(".", 1)[0]
+
+        if not number.isdigit():
+            fail("DISPLAY must contain a numeric local display")
+
+        socket_path = Path("/tmp/.X11-unix") / ("X" + number)
+
+        try:
+            info = socket_path.stat()
+        except OSError as error:
+            fail("DISPLAY socket is unavailable: " + str(error))
+
+        if not stat.S_ISSOCK(info.st_mode):
+            fail("DISPLAY target is not a Unix socket")
+
+        values[DISPLAY_KEY] = display
+
+    wayland = os.environ.get(WAYLAND_DISPLAY_KEY)
+
+    if wayland:
+        wayland = wayland.strip()
+
+        if not wayland or "/" in wayland or wayland in {".", ".."}:
+            fail("WAYLAND_DISPLAY must be a session-local basename")
+
+        socket_path = runtime_dir / wayland
+
+        try:
+            info = socket_path.stat()
+        except OSError as error:
+            fail("WAYLAND_DISPLAY socket is unavailable: " + str(error))
+
+        if not stat.S_ISSOCK(info.st_mode):
+            fail("WAYLAND_DISPLAY target is not a Unix socket")
+
+        if info.st_uid != uid:
+            fail("WAYLAND_DISPLAY socket owner mismatch")
+
+        values[WAYLAND_DISPLAY_KEY] = wayland
+
+    xauthority = os.environ.get(XAUTHORITY_KEY)
+
+    if xauthority:
+        xauthority = Path(xauthority.strip())
+
+        if not xauthority.is_absolute():
+            fail("XAUTHORITY must be absolute")
+
+        try:
+            xauthority.relative_to(runtime_dir)
+        except ValueError:
+            fail("XAUTHORITY must live inside desktop runtime directory")
+
+        try:
+            info = xauthority.stat()
+        except OSError as error:
+            fail("XAUTHORITY is unavailable: " + str(error))
+
+        if not stat.S_ISREG(info.st_mode):
+            fail("XAUTHORITY must be a regular file")
+
+        if info.st_uid != uid:
+            fail("XAUTHORITY owner mismatch")
+
+        values[XAUTHORITY_KEY] = str(xauthority)
+
+    return values
+
+
 def main():
     uid, gid = parse_identity()
 
     runtime_dir = inspect_runtime_directory(uid)
     bus = inspect_session_bus(runtime_dir, uid)
 
+    values = {
+        "XDG_RUNTIME_DIR": str(runtime_dir),
+        "DBUS_SESSION_BUS_ADDRESS": "unix:path=" + str(bus)
+    }
+
+    values.update(
+        optional_graphical_values(
+            runtime_dir,
+            uid,
+        )
+    )
+
     output = {
         "schema": OUTPUT_SCHEMA,
         "name": OUTPUT_NAME,
         "authority": AUTHORITY,
         "protocol": PROTOCOL,
-        "values": {
-            "XDG_RUNTIME_DIR": str(runtime_dir),
-            "DBUS_SESSION_BUS_ADDRESS": "unix:path=" + str(bus)
-        }
+        "values": values
     }
 
     json.dump(

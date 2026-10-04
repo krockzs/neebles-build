@@ -1,0 +1,6 @@
+{
+  "schema": "1",
+  "name": "neebles-dynamic-readonly-authority",
+  "authority": "modules.installed_runtime",
+  "root": "/opt/neebles/modules"
+}
