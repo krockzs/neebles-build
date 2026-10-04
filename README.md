@@ -289,28 +289,28 @@ Source/build certification and real Live acceptance are separate gates.
 
 Current certified Boss release:
 
-- Boss version: `1.0.18`
-- Boss source commit: `73a21c253f7335b9c1e0947cc854b6a3188d61c6`
-- certified CUSTOM revision: `4b7397700d18c65d1b0852c09494df45213f69d4`
+- Boss version: `1.0.22`
+- Boss source commit: `21923d5117a06b315dc8bcc0eb0d414c7e0b425d`
+- certified CUSTOM revision: `580e5948f25cc64e44d07976699f676de7a99174`
 - controlled Qt build world: `6.8.2`
 
-Published Boss 1.0.18 SHA256:
+Published Boss 1.0.22 SHA256:
 
 ```text
-bootstrap.json  15807a27915650acd50cd444c4f6e20fb183265e3f64528e79eebd27b87d269e
-boss-runtime.tar.gz  9eda9b502c33f19d6cab5cd07ee3feb60dede4f1da7427d018c5dbe69e4a4c3b
-client-data.tar.gz  1b98d333545c44ed4127da544d4b14c0918ed505cc0a84685e19cb9a24127a3e
+bootstrap.json  464626ed38c8f71164afad5168bc11acd06b38b6c8ca7b3ae165995a88ce5cce
+boss-runtime.tar.gz  0a4fe9224dfd958f4f5865b63959ebbe1fc7e272e3c859711d7e971026776e7b
+client-data.tar.gz  b6aa6d269b3911dc8f62a062237c1df6c802291a063b0644de8bd75dae5a4f06
 critical-update-manifest.json  37517e5f3dc66819f61f5a7bb8ace1921282415f10551d2defa5c3eb0985b570
-install.sh  7607f63eb3cb90537b336a3e212def14a179c58ae1654ee36839a23e6c265a34
-neebles-auth-agent  da272cfedf4ab0ee4054740db1d3cf742983b54327eab5f7cb63d05336573100
-neebles-backend  b2ddec3359e1c7da4c9b8f116120c9a09566e2c629086877f93950cce75c0eb2
-neebles-installer  17dab2e0db5fd804a90cd86db6c609a6dc5cb306010222c7fd6bd6b4f945a40b
-neebles-runtime-resolve  27d5b4c380659bb120b430622914d0d8f38b4b1e997c1b279fa7924a2fa4fa26
-neebles-ui  0e6c344c5fc91a98864dd1046128e4648d3a35d860c149fb2e94c1ba2820db85
-SHA256SUMS  7ea7971247390e91c7fdee1f783098031b54e08654d7757619c11788e330f4ce
+install.sh  cc7ecf920f380ec06b4cf88572e48efcfaca0770ffc7b1b70bd61e6bc8742710
+neebles-auth-agent  203d581fe1f09e6eeb71758674a086c11e1fb37c2a506913d29991ec21e503c5
+neebles-backend  fe4557e3d10f7107a80bc3099b8ada42336788f9f8b275b222685d45c02bff80
+neebles-installer  eb27a02fa156f03315454fef3e89a709b45d1b748cf9c01ca1e67a2983ee6cf1
+neebles-runtime-resolve  c14a2f31b8c37719a093a5582ce030d9d84efd1562f399f77da379d6fb5c6ae2
+neebles-ui  dd5f7e204c75774722abe182418fb236d655812891718286e409e611dec35d5d
+SHA256SUMS  d8683fc2cfefd86f1b77a20fe038c5f2ddcadc234ba3cea4c25b1e8a1fea7a21
 ```
 
-These hashes belong specifically to the published Boss 1.0.18 release.
+These hashes belong specifically to the published Boss 1.0.22 release.
 
 ### How Boss is compiled against certified CUSTOM material
 
