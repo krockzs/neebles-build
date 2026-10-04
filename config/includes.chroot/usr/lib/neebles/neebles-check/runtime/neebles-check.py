@@ -28,7 +28,6 @@ COMPONENTS = {
 }
 
 BRANCH_CANDIDATES = [
-    "neebles-custom",
     "main",
     "master",
 ]
