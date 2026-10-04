@@ -1,8 +1,8 @@
 # N.E.E.B.L.E.S. BUILD
 
-**Current integration status: N.E.E.B.L.E.S. OS 1.0.5 / source integration CLOSED / LIVE acceptance pending. Boss contract CLOSED.**
+**Current integration status (2026-10-04): source integration CLOSED; real Live boot and Boss 1.0.21 installation exercised; final installed-system acceptance and the next integrated release remain pending. Boss contract remains CLOSED.**
 
-Source-side integration is complete. The next certification frontier is the real N.E.E.B.L.E.S. Live environment, installation flow and installed-system acceptance.
+Source-side integration is complete. A real N.E.E.B.L.E.S. Live session has now been used to install and exercise Boss 1.0.21, including Launcher/Tray startup and Test Module installation. The remaining frontier is the next integrated image/release pass and final installed-system acceptance.
 
 BUILD remains the image-side materialization and recovery layer. Point 8 did not change that ownership boundary; it hardened how canonical OS and CUSTOM material is published into the image.
 
@@ -473,3 +473,20 @@ validate installed system
 
 Only that real Live gate can close runtime acceptance.
 
+
+
+## Current checkpoint — 2026-10-04
+
+The current development checkpoint is intentionally **pre-1.0.22**. No new Boss release is being cut in this checkpoint.
+
+Important facts for the next BUILD pass:
+
+- Boss **1.0.21** is the currently published Boss release.
+- The OS platform boundary provider was repaired after Live testing so an ordinary user no longer needs to copy the domestic rootfs `/etc` tree merely to expose files such as `/etc/resolv.conf`; the provider now uses a Bubblewrap overlay-based boundary.
+- Explicit AuthoritySupply plus the repaired provider successfully reached the remote Registry and exposed Test Module in Live.
+- BUILD must eventually rematerialize the updated OS provider into a fresh image; that rebuild is deliberately deferred to the next integration session.
+- Boss Tray work is source-complete enough for the next release candidate: Qt Tray Host controlled build, DESTDIR install gate, domestic final ELF gate and Rust release build are GREEN. Runtime click/dismiss behavior still requires real Plasma acceptance.
+- The existing Launcher build/install/certification order is a protected integration path and must not be casually reordered.
+- `neebles-build` operations continue to require root authority during image construction.
+
+No statement in this checkpoint claims that Boss 1.0.22, a new ISO, or final Test Module certification has been published.
