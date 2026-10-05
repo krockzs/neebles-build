@@ -677,6 +677,43 @@ def fetch_manifest(filename):
     )
 
 
+def fetch_text_file(filename):
+    branches = []
+
+    detected = detect_default_branch()
+
+    if detected:
+        branches.append(detected)
+
+    for branch in BRANCH_CANDIDATES:
+        if branch not in branches:
+            branches.append(branch)
+
+    last_error = None
+
+    for branch in branches:
+        try:
+            payload = fetch_text(
+                raw_url(
+                    branch,
+                    filename,
+                )
+            )
+
+            return {
+                'branch': branch,
+                'payload': payload,
+            }
+
+        except Exception as error:
+            last_error = str(error)
+
+    raise RuntimeError(
+        last_error
+        or 'remote text file unavailable'
+    )
+
+
 def validate_manifest(manifest, component):
     if not isinstance(manifest, dict):
         raise ValueError("manifest is not an object")
@@ -1242,6 +1279,206 @@ def parse_module_packages_tsv(payload):
         }
 
     return packages
+
+
+ESSENTIALS_PACKAGES_FILE = (
+    'runtime/manifests/modules/'
+    'essentials.packages.tsv'
+)
+
+ESSENTIALS_ROOT = Path(
+    '/opt/neebles-build/modules/packages/essentials'
+)
+
+
+def essentials_local_inventory(root=ESSENTIALS_ROOT):
+    try:
+        metadata = root.lstat()
+    except FileNotFoundError:
+        return {
+            'present': False,
+            'root_type': None,
+            'inventory': {},
+        }
+
+    root_type = entry_type(root)
+
+    if root_type != 'dir':
+        return {
+            'present': True,
+            'root_type': root_type,
+            'inventory': {},
+        }
+
+    inventory = {}
+
+    for path in sorted(root.iterdir(), key=lambda item: item.name):
+        kind = entry_type(path)
+
+        item = {
+            'filename': path.name,
+            'type': kind,
+        }
+
+        if kind == 'file':
+            item['sha256'] = sha256_file(path)
+
+        elif kind == 'symlink':
+            item['target'] = os.readlink(path)
+
+        inventory[path.name] = item
+
+    return {
+        'present': True,
+        'root_type': 'dir',
+        'inventory': inventory,
+    }
+
+
+def privileged_essentials_inventory():
+    response = helper_request(
+        'modules-essentials-inventory'
+    )
+
+    inventory = response.get('inventory')
+    present = response.get('present')
+    root_type = response.get('root_type')
+
+    if not isinstance(inventory, dict):
+        raise PermissionError(
+            'invalid privileged essentials inventory'
+        )
+
+    if not isinstance(present, bool):
+        raise PermissionError(
+            'invalid privileged essentials presence'
+        )
+
+    if root_type is not None and not isinstance(root_type, str):
+        raise PermissionError(
+            'invalid privileged essentials root type'
+        )
+
+    return {
+        'present': present,
+        'root_type': root_type,
+        'inventory': inventory,
+    }
+
+
+def compare_essentials_packages(packages, inventory):
+    expected_names = set(packages)
+    actual_names = set(inventory)
+
+    missing = sorted(expected_names - actual_names)
+    extra = sorted(actual_names - expected_names)
+    different = []
+
+    for filename in sorted(expected_names & actual_names):
+        actual = inventory[filename]
+        expected = packages[filename]
+
+        if (
+            actual.get('type') != 'file'
+            or actual.get('sha256') != expected['sha256']
+        ):
+            different.append(filename)
+
+    valid = not missing and not extra and not different
+
+    return {
+        'valid': valid,
+        'expected_packages': len(expected_names),
+        'local_packages': len(actual_names),
+        'missing_count': len(missing),
+        'extra_count': len(extra),
+        'different_count': len(different),
+        'missing': missing[:MAX_DIFFERENCE_PATHS],
+        'extra': extra[:MAX_DIFFERENCE_PATHS],
+        'different': different[:MAX_DIFFERENCE_PATHS],
+        'difference_output_truncated': (
+            len(missing) > MAX_DIFFERENCE_PATHS
+            or len(extra) > MAX_DIFFERENCE_PATHS
+            or len(different) > MAX_DIFFERENCE_PATHS
+        ),
+    }
+
+
+def check_essentials():
+    result = {
+        'scope': 'essentials',
+        'local_path': str(ESSENTIALS_ROOT),
+        'local_present': False,
+        'remote_verified': False,
+        'valid': None,
+        'status': None,
+        'remote_branch': None,
+    }
+
+    try:
+        remote = fetch_text_file(
+            ESSENTIALS_PACKAGES_FILE
+        )
+    except Exception as error:
+        result['status'] = 'unverified_remote_unavailable'
+        result['remote_error'] = str(error)
+        return result
+
+    try:
+        packages = parse_module_packages_tsv(
+            remote['payload']
+        )
+
+        if not packages:
+            raise ValueError(
+                'essentials package selector is empty'
+            )
+    except Exception as error:
+        result['status'] = 'remote_selector_invalid'
+        result['remote_error'] = str(error)
+        return result
+
+    result['required_packages'] = len(packages)
+    result['remote_verified'] = True
+    result['remote_branch'] = remote['branch']
+
+    try:
+        local = essentials_local_inventory()
+    except PermissionError:
+        try:
+            local = privileged_essentials_inventory()
+        except PermissionError as error:
+            result['status'] = 'permission_denied_requires_root'
+            result['local_error'] = str(error)
+            return result
+
+    result['local_present'] = local['present']
+
+    if not local['present']:
+        result['valid'] = False
+        result['status'] = 'local_missing'
+        return result
+
+    if local['root_type'] != 'dir':
+        result['valid'] = False
+        result['status'] = 'mismatch'
+        result['local_root_type'] = local['root_type']
+        return result
+
+    comparison = compare_essentials_packages(
+        packages,
+        local['inventory'],
+    )
+
+    result['comparison'] = comparison
+    result['valid'] = comparison['valid']
+    result['status'] = (
+        'valid'
+        if comparison['valid']
+        else 'mismatch'
+    )
+
+    return result
 
 
 def validate_module_package_membership(packages, normalized):
@@ -1859,11 +2096,42 @@ def usage():
             "neebles-check --all",
             "neebles-check --restore",
             "neebles-check --module MODULE_ID",
+            "neebles-check --modules essentials",
         ],
     }
 
 
 def main():
+    if (
+        len(sys.argv) == 3
+        and sys.argv[1] == '--modules'
+        and sys.argv[2] == 'essentials'
+    ):
+        result = check_essentials()
+        results = [result]
+
+        output = {
+            'schema': 'neebles-check-v1',
+            'repository': (
+                'https://github.com/'
+                + REPOSITORY
+            ),
+            'mode': '--modules',
+            'scope': 'essentials',
+            'overall_status': overall_status(results),
+            'modules': results,
+        }
+
+        print(
+            json.dumps(
+                output,
+                indent=2,
+                ensure_ascii=False,
+            )
+        )
+
+        return exit_code(results)
+
     if (
         len(sys.argv) == 3
         and sys.argv[1] == '--module'

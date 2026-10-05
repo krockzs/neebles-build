@@ -1,6 +1,6 @@
 # N.E.E.B.L.E.S. BUILD
 
-**Current integration status (2026-10-04):** image-side architecture remains valid, but the working tree must be resynchronized with the current OS authority set and CUSTOM Construction before the next ISO. Latest published Boss is 1.0.22; Boss 1.0.23 and the next integrated image are pending.
+**Current integration status (2026-10-05):** N.E.E.B.L.E.S. OS 2.0.0 is the final OS version line. BUILD provides OS/image infrastructure, certified Boss/Calamares classic material, recovery and the generic module territories required by the productive MaterialBinding + RuntimeLease architecture. Module-specific CUSTOM v2 / Esbirro truth is supplied dynamically by Boss and is not baked into the ISO. Fresh Live and installed-system acceptance remain runtime gates; fixes inside this integration line do not require an OS version bump.
 
 N.E.E.B.L.E.S. BUILD is the image-side materialization and recovery layer used to compose N.E.E.B.L.E.S. OS.
 
@@ -15,20 +15,21 @@ BUILD owns:
 - live-build configuration;
 - base image composition;
 - image-side filesystem territory;
-- image-side copies of certified Boss and Calamares material;
+- image-side copies of certified Boss and Calamares classic material;
 - image-side platform authority materialization;
-- image-side Construction declaration materialization;
+- generic Construction territory creation;
 - shared module territory creation;
-- effective permission reconstruction from CUSTOM manifests;
+- image-side permission reconstruction required by certified classic material;
 - independent recovery environment;
 - final ISO generation.
 
 BUILD does not own:
 
-- Construction semantics;
+- module-specific Construction declarations;
 - module package membership truth;
 - module integrity truth;
-- runtime world semantics;
+- module runtime-world truth;
+- CUSTOM v2 / Esbirro semantics;
 - platform authority semantics;
 - Boss Lifecycle;
 - Registry state.
@@ -41,17 +42,33 @@ BUILD does not own:
 OS
     -> canonical platform authority + providers
 
-CUSTOM
-    -> certified Boss/Calamares/module material
-    -> Construction declarations
-    -> manifests/worlds
+CUSTOM classic
+    -> certified Boss image material
+    -> certified Calamares image material
+    -> classic image-side metadata required by those corpora
+
+CUSTOM v2 / Esbirro
+    -> module package membership + integrity
+    -> module source material
+    -> module-specific Construction declarations
+    -> module runtime worlds
+    -> Essential module baseline authority
 
 Boss
-    -> release assets and governance
+    -> governance
+    -> dynamic Preinstall
+    -> module materialization
+    -> dynamic Construction/runtime-world publication
+    -> release/bootstrap assets
 
 BUILD
     -> deterministic image-side materialization
+    -> generic territories
+    -> independent recovery/checking
+    -> final ISO
 ```
+
+CUSTOM classic and CUSTOM v2 / Esbirro are separate architectural worlds. A rule that applies to dynamic module material must not be projected onto the certified Boss/Calamares material required by the image.
 
 ---
 
@@ -108,11 +125,11 @@ Publication is transactional.
 
 ---
 
-# CUSTOM runtime metadata
+# Classic CUSTOM runtime metadata
 
-CUSTOM owns canonical integrity and effective installed metadata.
+Classic CUSTOM owns canonical integrity and effective installed metadata for the Boss and Calamares corpora baked into the image.
 
-BUILD carries image-side current manifests and applies certified runtime metadata generically.
+BUILD carries their image-side current manifests and applies certified runtime metadata generically.
 
 Examples:
 
@@ -124,6 +141,8 @@ Examples:
 BUILD verifies material before applying privileged metadata.
 
 There is no second hardcoded permission truth.
+
+This section does not authorize BUILD to bake CUSTOM v2 / Esbirro module truth.
 
 ---
 
@@ -137,7 +156,7 @@ Image-side Boss material territory:
 /opt/neebles-build/boss/rootfs
 ```
 
-Canonical source remains CUSTOM.
+Canonical source remains CUSTOM classic.
 
 BUILD is not the Boss compiler authority.
 
@@ -153,7 +172,7 @@ Image-side Calamares material territory:
 /opt/neebles-build/calamares/rootfs
 ```
 
-Canonical source remains CUSTOM.
+Canonical source remains CUSTOM classic.
 
 Boss and Calamares remain independent domestic corpora.
 
@@ -161,88 +180,98 @@ Boss and Calamares remain independent domestic corpora.
 
 # Shared module territory
 
-BUILD owns the image-side directory contract:
+BUILD owns only the generic image-side directory contract:
 
 ```text
 /opt/neebles-build/modules
 /opt/neebles-build/modules/packages
-/opt/neebles-build/modules/rootfs
+/opt/neebles-build/modules/packages/essentials
+/opt/neebles-build/modules/material
+/opt/neebles-build/modules/runtime-leases
 ```
 
 Current intended modes:
 
 ```text
-modules   root:root 0755
-packages  root:root 0775
-rootfs    root:root 0755
+modules             root:root 0755
+packages            root:root 0775
+packages/essentials root:root 0775
+material            root:root 0755
+runtime-leases      root:root 0755
 ```
 
-This is a shared cumulative territory.
+This is the generic image-side territory required by the productive MaterialBinding + RuntimeLease architecture.
+
+`packages/essentials/` is the dedicated physical house for the global Essential closure source packages.
+
+`packages/` outside that subdirectory is the shared general/module package arsenal.
+
+`material/<module-id>/` holds persistent authenticated MaterialBindings. `runtime-leases/` is the parent territory for ephemeral independent runtime leases. BUILD creates only these generic houses; Boss owns their productive semantics.
 
 BUILD does **not** predeclare per-module package ownership.
 
 ---
 
-## Important: module material is not baked blindly into BUILD
+## Module material is dynamic
 
 The canonical module install flow is:
 
 ```text
-CUSTOM
-    -> package membership + material integrity + source material
+CUSTOM v2 / Esbirro
+    -> Essential package authority
+    -> module package membership + integrity
+    -> module source material
+    -> Construction/runtime-world truth
 
 Boss Preinstall
-    -> verify/reuse/download exact required DEBs
+    -> ensure/reuse/download certified Essential DEBs
+    -> ensure/reuse/download exact module delta DEBs
+    -> supply module-specific Construction/runtime-world declarations
 
 Boss materialization
-    -> create required runtime material in /opt/neebles-build/modules
+    -> materialize required runtime material in /opt/neebles-build/modules
 
 Lifecycle
-    -> execute module flow
+    -> execute the module-declared flow
 ```
 
-Therefore BUILD should provide the territory and required authority/declaration infrastructure.
+Therefore BUILD provides only generic territory and generic OS/platform authority infrastructure for modules.
 
-It must not duplicate the entire module package/rootfs world into the image merely because one reference module currently uses it, unless a future explicit image contract says otherwise.
+A new module, package delta, Construction declaration or module runtime world must never require rebuilding the N.E.E.B.L.E.S. ISO.
 
 ---
 
-# Domestic Construction declarations
+# Domestic Construction territory
 
-Canonical source:
-
-```text
-neebles-custom/runtime/construction/
-```
-
-Image-side destination:
+BUILD creates only the generic image-side Construction territory:
 
 ```text
-config/includes.chroot/usr/lib/neebles/domestic/construction/
+/usr/lib/neebles/domestic/construction/
 ```
 
-Synchronizer:
+The directory is created during live-build by the generic BUILD territory hook.
+
+No module-specific Construction declaration is baked into the image.
+
+Module-specific Construction declarations remain owned by CUSTOM v2 / Esbirro and are supplied dynamically by Boss Preinstall when required.
+
+---
+
+# Dynamic module runtime authority
+
+BUILD carries the generic platform descriptor:
 
 ```text
-scripts/sync-neebles-custom-construction.py
+/usr/lib/neebles/platform/authority/modules.runtime.json
 ```
 
-The same synchronization transaction also materializes the canonical shared module runtime manifest from neebles-custom/runtime/modules/domestic-runtime.json into config/includes.chroot/opt/neebles-build/modules/domestic-runtime.json.
+That descriptor remains generic image infrastructure.
 
-The module runtime manifest remains CUSTOM-owned. BUILD validates its generic runtime contract, stages it, verifies byte parity, and publishes it into the image-side shared module territory.
+Its declared manifest path is not a persistent shared module runtime authority. For `modules.runtime`, Boss creates an authenticated RuntimeLease and substitutes the execution manifest with the lease-private `domestic-runtime.json` before Workspace execution.
 
-BUILD copies declarations opaquely.
+The runtime manifest payload itself remains CUSTOM v2 / Esbirro module truth and is **not** baked into BUILD.
 
-It does not parse or reinterpret:
-
-- `runtime_authority`;
-- `world`;
-- execution mode;
-- session;
-- mount semantics;
-- module technology.
-
-Those semantics belong to CUSTOM/Boss contracts.
+The Boss/bootstrap `runtime_archive` and its own `domestic-runtime.json` belong to the separate Boss classic/bootstrap world and are not part of this module rule.
 
 ---
 
@@ -252,14 +281,16 @@ Before a new integrated ISO:
 
 ```text
 1. synchronize current OS platform authority/providers
-2. synchronize current CUSTOM Construction declarations and shared module runtime manifest
-3. synchronize current certified Boss/Calamares image material when required
-4. verify manifests and byte parity
-5. verify BUILD-created territory and modes
+2. synchronize current certified Boss/Calamares classic image material when required
+3. verify image-side manifests and byte parity
+4. verify BUILD-created generic territories and modes
+5. verify recovery/checker syntax and contracts
 6. only then run live-build
 ```
 
-A successful `lb build` against stale synchronized material is not a valid N.E.E.B.L.E.S. image.
+CUSTOM v2 / Esbirro module declarations, module runtime worlds and module package material are not pre-build synchronization inputs for the ISO.
+
+A successful `lb build` against stale OS or classic Boss/Calamares image material is not a valid N.E.E.B.L.E.S. image.
 
 ---
 
@@ -273,28 +304,38 @@ neebles-check
 
 Normal Boss startup does not depend on recovery.
 
+Component and module checks remain separate.
+
 Dynamic module verification uses:
 
 ```text
 neebles-check --module <module_id>
 ```
 
-The checker retrieves the module's package-membership and integrity contracts from the same CUSTOM revision.
+Global Essential module-baseline verification uses:
 
-It verifies only required module material and ignores unrelated shared pool contents.
+```text
+neebles-check --modules essentials
+```
+
+Both retrieve their canonical package authority from CUSTOM v2 / Esbirro.
+
+`--module <module_id>` verifies only the required delta/material declared for that module and ignores unrelated shared pool contents.
+
+`--modules essentials` verifies the dedicated Essential package house exactly against `runtime/manifests/modules/essentials.packages.tsv`.
+
+The checker is verify-only for these module scopes. It does not download, materialize or repair module material.
 
 ---
 
 # Module checker laws
 
-The checker validates:
+For a concrete module, the checker validates the existing module manifest/package contract, including:
 
 - safe module identity;
-- exact required package membership;
+- required package membership;
 - TSV/manifest SHA agreement;
-- file type;
-- mode;
-- size;
+- declared file metadata;
 - SHA256;
 - symlink target;
 - missing material;
@@ -309,72 +350,65 @@ The observed module root is fixed to:
 /opt/neebles-build/modules
 ```
 
----
-
-# Current Boss release baseline
-
-Latest published Boss release:
+For the Essential baseline:
 
 ```text
-1.0.22
+neebles-check --modules essentials
 ```
 
-Current published baseline used by the previous integration pass:
+the authority is:
 
 ```text
-Boss source commit:
-21923d5117a06b315dc8bcc0eb0d414c7e0b425d
-
-Certified CUSTOM revision:
-580e5948f25cc64e44d07976699f676de7a99174
-
-Controlled Qt world:
-6.8.2
+runtime/manifests/modules/essentials.packages.tsv
 ```
 
-Those values describe **1.0.22 only**.
+and the observed physical house is:
 
-They must not be reused as 1.0.23 truth.
+```text
+/opt/neebles-build/modules/packages/essentials
+```
 
----
+The Essentials checker validates:
 
-# Boss 1.0.23 boundary
+- selector syntax;
+- exact filename membership;
+- regular-file type;
+- SHA256;
+- missing packages;
+- extra packages;
+- modified packages.
 
-Boss 1.0.23 is not considered ready for BUILD until:
+The package count is derived from the authority and is never hardcoded.
 
-- Test Module is committed to an immutable revision;
-- Boss Registry points to that revision;
-- CUSTOM Construction points to that revision;
-- CUSTOM current material/worlds are committed;
-- Boss release workflow pins the new exact CUSTOM revision;
-- Cargo version surfaces are 1.0.23;
-- release workflow/trigger/notes are 1.0.23;
-- 1.0.23 release assets are published and verified.
-
-After publication, BUILD documentation/material references can be updated to the new release assets.
+Rootfs verification is a separate concern and is not implied by `--modules essentials`.
 
 ---
 
-# Why a new ISO is required
+# Image-side Boss and Calamares baseline
 
-The OS platform authority set changed after the previous image.
+BUILD does not use prose in this README as release authority for Boss or Calamares.
 
-New image-side requirements include:
+The certified image-side manifests/material present in the BUILD tree are the integration truth for the ISO being cooked.
 
-```text
-boss.modules.ipc
-boss.runtime
-modules.runtime
-modules.installed_runtime
-```
+Boss bootstrap remains capable of resolving its own stable release/bootstrap contract independently.
 
-The platform providers also changed.
+Do not infer a CUSTOM v2 module rule from the Boss/Calamares classic material model.
 
-These are OS-owned physical image resources.
+---
 
-Therefore installing Boss 1.0.23 onto an old Live image is not sufficient for final certification.
+# N.E.E.B.L.E.S. OS 2.0.0 boundary
 
-A new integrated ISO is required.
+N.E.E.B.L.E.S. OS 2.0.0 establishes the current generic image boundary:
+
+- OS platform authority/providers are image resources;
+- Boss and Calamares classic certified material may be image resources;
+- generic module territories are image resources;
+- the generic Construction territory is an image resource;
+- `neebles-check` is an image recovery/checking resource;
+- module-specific CUSTOM v2 / Esbirro truth is dynamic;
+- adding a new module must not require rebuilding the ISO.
+
+The 2.0.0 version is carried by the OS surfaces used by the Live and installed system.
 
 ---
 
@@ -403,20 +437,30 @@ Required final gate:
 
 ```text
 boot new ISO
+    -> verify N.E.E.B.L.E.S. OS 2.0.0 identity
     -> verify Live environment
     -> verify complete AuthoritySupply
+    -> verify generic module territories
+       -> /opt/neebles-build/modules/packages/essentials
+       -> /opt/neebles-build/modules/material
+       -> /opt/neebles-build/modules/runtime-leases
+       -> /usr/lib/neebles/domestic/construction
     -> verify Calamares runtime
     -> verify Boss bootstrap
     -> verify installer/auth path
     -> install Test Module
-    -> verify 47-DEB Preinstall behavior
+       -> Boss Preinstall establishes/reuses Essential baseline
+       -> Boss Preinstall establishes/reuses Test Module delta
+       -> module-specific Construction/runtime-world truth is supplied dynamically
+    -> run neebles-check --modules essentials
+    -> run neebles-check --module test-module
     -> verify real materialization
     -> Open Test Module
     -> verify persistent runtime birth
     -> verify Module IPC registration
     -> verify UI / settings / Tray / notifications where applicable
     -> uninstall / reinstall
-    -> verify package reuse
+    -> verify shared package reuse
     -> install OS
     -> verify installed-system behavior
 ```
@@ -425,24 +469,28 @@ Only the real image gate closes runtime acceptance.
 
 ---
 
-# Current documentation cleanup
+# 2.0.0 documentation state
 
-Historical text that says:
+Obsolete current-state documentation includes any claim that:
 
 ```text
-pre-1.0.22
-Boss 1.0.21 is current
-1.0.22 is not published
+BUILD bakes a concrete module Construction declaration
+BUILD bakes CUSTOM v2 module domestic-runtime.json
+a reference module package/rootfs world is an ISO input
+the old flat module package set is the current module architecture
+the Essential baseline belongs to each module manifest
 ```
-
-is obsolete and must not remain as current-state documentation.
 
 Current truth is:
 
 ```text
-latest published Boss: 1.0.22
-next Boss release: 1.0.23
-next integrated ISO: pending
+BUILD creates generic territories
+CUSTOM classic Boss/Calamares remains a separate image-material world
+CUSTOM v2 / Esbirro owns dynamic module truth
+Boss Preinstall supplies dynamic module requirements
+Essential packages have a dedicated shared house
+neebles-check --modules essentials verifies that house
+N.E.E.B.L.E.S. OS version: 2.0.0
 ```
 
 ---
@@ -454,3 +502,5 @@ BUILD must remain boring.
 It should deterministically materialize certified truths from their real owners.
 
 If BUILD starts deciding module technology, Construction meaning, platform authority semantics or Boss behavior, ownership has drifted.
+
+---

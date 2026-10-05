@@ -485,6 +485,18 @@ def module_inventory(module, paths):
         ),
     }
 
+def essentials_inventory(module):
+    root = (
+        MODULE_ROOT
+        / 'packages'
+        / 'essentials'
+    )
+
+    return module.essentials_local_inventory(
+        root
+    )
+
+
 def path_present(path):
     return (
         path.exists()
@@ -2236,6 +2248,25 @@ def main():
                     "present": data["present"],
                     "inventory": data["inventory"],
                 }
+
+    elif operation == 'modules-essentials-inventory':
+        module = load_checker()
+
+        try:
+            data = essentials_inventory(module)
+            result = {
+                'ok': True,
+                'operation': operation,
+                'present': data['present'],
+                'root_type': data['root_type'],
+                'inventory': data['inventory'],
+            }
+        except Exception as error:
+            result = {
+                'ok': False,
+                'operation': operation,
+                'error': str(error),
+            }
 
     elif operation == 'module-inventory':
         module = load_checker()
