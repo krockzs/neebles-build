@@ -7,7 +7,3 @@ install -d -o root -g root -m 0775 /opt/neebles-build/modules/packages
 install -d -o root -g root -m 0775 /opt/neebles-build/modules/packages/essentials
 install -d -o root -g root -m 0755 /opt/neebles-build/modules/material
 install -d -o root -g root -m 0755 /opt/neebles-build/modules/runtime-leases
-
-# NEEBLES domestic construction territory
-install -d -o root -g root -m 0755 /usr/lib/neebles/domestic
-install -d -o root -g root -m 0755 /usr/lib/neebles/domestic/construction

@@ -1,6 +1,6 @@
 # N.E.E.B.L.E.S. BUILD
 
-**Current integration status (2026-10-05):** N.E.E.B.L.E.S. OS 2.0.0 is the final OS version line. BUILD provides OS/image infrastructure, certified Boss/Calamares classic material, recovery and the generic module territories required by the productive MaterialBinding + RuntimeLease architecture. Module-specific CUSTOM v2 / Esbirro truth is supplied dynamically by Boss and is not baked into the ISO. Fresh Live and installed-system acceptance remain runtime gates; fixes inside this integration line do not require an OS version bump.
+**Current integration status (2026-10-06):** N.E.E.B.L.E.S. OS 2.0.0 remains the final OS version line. BUILD provides deterministic OS/image infrastructure, certified Boss/Calamares classic material, recovery and the generic module territories required by MaterialBinding schema 2 + RuntimeLease. Module Construction declarations are no longer image territory: Boss Preinstall authenticates them from the exact pinned CUSTOM v2 revision and persists them inside the module MaterialBinding. Fresh Live and installed-system acceptance remain runtime gates.
 
 N.E.E.B.L.E.S. BUILD is the image-side materialization and recovery layer used to compose N.E.E.B.L.E.S. OS.
 
@@ -17,7 +17,6 @@ BUILD owns:
 - image-side filesystem territory;
 - image-side copies of certified Boss and Calamares classic material;
 - image-side platform authority materialization;
-- generic Construction territory creation;
 - shared module territory creation;
 - image-side permission reconstruction required by certified classic material;
 - independent recovery environment;
@@ -58,7 +57,7 @@ Boss
     -> governance
     -> dynamic Preinstall
     -> module materialization
-    -> dynamic Construction/runtime-world publication
+    -> authenticated Construction/runtime-world binding
     -> release/bootstrap assets
 
 BUILD
@@ -241,22 +240,28 @@ A new module, package delta, Construction declaration or module runtime world mu
 
 ---
 
-# Domestic Construction territory
+# Module Construction boundary
 
-BUILD creates only the generic image-side Construction territory:
+BUILD owns no module Construction declaration territory.
+
+Module-specific Construction truth remains owned by CUSTOM v2 / Esbirro.
+
+The productive path is:
 
 ```text
-/usr/lib/neebles/domestic/construction/
+exact pinned CUSTOM v2 revision
+    -> Boss Preinstall
+    -> validate Construction subject against module identity
+    -> MaterialBinding schema 2
+    -> authenticated construction.json + SHA256
+    -> Lifecycle / Workspace execution
 ```
 
-The directory is created during live-build by the generic BUILD territory hook.
+Construction declarations are therefore runtime material authority bound to the installed module, not static image resources.
 
-No module-specific Construction declaration is baked into the image.
-
-Module-specific Construction declarations remain owned by CUSTOM v2 / Esbirro and are supplied dynamically by Boss Preinstall when required.
+Adding, updating or removing a module Construction declaration must never require rebuilding the N.E.E.B.L.E.S. ISO.
 
 ---
-
 # Dynamic module runtime authority
 
 BUILD carries the generic platform descriptor:
@@ -403,7 +408,7 @@ N.E.E.B.L.E.S. OS 2.0.0 establishes the current generic image boundary:
 - OS platform authority/providers are image resources;
 - Boss and Calamares classic certified material may be image resources;
 - generic module territories are image resources;
-- the generic Construction territory is an image resource;
+- module Construction declarations are not image resources and enter through authenticated MaterialBinding;
 - `neebles-check` is an image recovery/checking resource;
 - module-specific CUSTOM v2 / Esbirro truth is dynamic;
 - adding a new module must not require rebuilding the ISO.
@@ -444,7 +449,6 @@ boot new ISO
        -> /opt/neebles-build/modules/packages/essentials
        -> /opt/neebles-build/modules/material
        -> /opt/neebles-build/modules/runtime-leases
-       -> /usr/lib/neebles/domestic/construction
     -> verify Calamares runtime
     -> verify Boss bootstrap
     -> verify installer/auth path
@@ -475,6 +479,7 @@ Obsolete current-state documentation includes any claim that:
 
 ```text
 BUILD bakes a concrete module Construction declaration
+BUILD creates a generic static Construction declaration territory
 BUILD bakes CUSTOM v2 module domestic-runtime.json
 a reference module package/rootfs world is an ISO input
 the old flat module package set is the current module architecture
@@ -488,6 +493,7 @@ BUILD creates generic territories
 CUSTOM classic Boss/Calamares remains a separate image-material world
 CUSTOM v2 / Esbirro owns dynamic module truth
 Boss Preinstall supplies dynamic module requirements
+MaterialBinding schema 2 carries authenticated Construction truth
 Essential packages have a dedicated shared house
 neebles-check --modules essentials verifies that house
 N.E.E.B.L.E.S. OS version: 2.0.0
