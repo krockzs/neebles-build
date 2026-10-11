@@ -1,6 +1,6 @@
 # N.E.E.B.L.E.S. BUILD
 
-**Current integration status (2026-10-06):** N.E.E.B.L.E.S. OS 2.0.0 remains the final OS version line. BUILD provides deterministic OS/image infrastructure, certified Boss/Calamares classic material, recovery and the generic module territories required by MaterialBinding schema 2 + RuntimeLease. Module Construction declarations are no longer image territory: Boss Preinstall authenticates them from the exact pinned CUSTOM v2 revision and persists them inside the module MaterialBinding. Fresh Live and installed-system acceptance remain runtime gates.
+**Current BUILD integration scope:** BUILD composes the N.E.E.B.L.E.S. OS image from the current OS platform authority, certified classic image material, recovery infrastructure and generic module territories required by MaterialBinding schema 2 + RuntimeLease. Module-specific Construction declarations and runtime-world truth are not baked into the image. Fresh Live and installed-system acceptance remain runtime gates.
 
 N.E.E.B.L.E.S. BUILD is the image-side materialization and recovery layer used to compose N.E.E.B.L.E.S. OS.
 
@@ -392,6 +392,8 @@ Rootfs verification is a separate concern and is not implied by `--modules essen
 # Image-side Boss and Calamares baseline
 
 BUILD does not use prose in this README as release authority for Boss or Calamares.
+
+BUILD documents image composition and its own contracts. Boss product versions, release notes, patches and update policy remain in the Boss repository; they are not tracked as BUILD README status.
 
 The certified image-side manifests/material present in the BUILD tree are the integration truth for the ISO being cooked.
 
