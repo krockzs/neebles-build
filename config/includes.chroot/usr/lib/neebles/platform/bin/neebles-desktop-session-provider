@@ -158,9 +158,29 @@ def optional_graphical_values(runtime_dir, uid):
             fail("XAUTHORITY must be absolute")
 
         try:
-            xauthority.relative_to(runtime_dir)
-        except ValueError:
-            fail("XAUTHORITY must live inside desktop runtime directory")
+            resolved = xauthority.resolve(strict=True)
+        except (OSError, RuntimeError) as error:
+            fail("XAUTHORITY path cannot be resolved: " + str(error))
+
+        # Reject symlinks and path aliases rather than approving a different
+        # canonical target than the path supplied by the desktop session.
+        if resolved != xauthority:
+            fail("XAUTHORITY must be a canonical path without symlinks")
+
+        if not (
+            resolved.is_relative_to(runtime_dir)
+            or resolved.is_relative_to(Path("/tmp"))
+        ):
+            fail("XAUTHORITY must live inside desktop runtime directory or /tmp")
+
+        if resolved.is_relative_to(Path("/tmp")):
+            parent_info = resolved.parent.stat()
+            if not (
+                parent_info.st_uid == 0
+                and stat.S_ISDIR(parent_info.st_mode)
+                and bool(parent_info.st_mode & stat.S_ISVTX)
+            ):
+                fail("XAUTHORITY temporary directory is unsafe")
 
         try:
             info = xauthority.stat()
