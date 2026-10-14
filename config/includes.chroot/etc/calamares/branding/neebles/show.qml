@@ -113,7 +113,7 @@ Presentation {
             var line = lines[i]
             var match = line
                 .trim()
-                .match(/^\[([A-Za-z]{2,3}(?:_[A-Za-z0-9]+)?)\]$/)
+                .match(/^\[([A-Za-z]{2,3}(?:_[A-Za-z0-9]+)?(?:@[A-Za-z0-9_-]+)?)\]$/)
 
             if (match) {
                 currentLocale = match[1]
@@ -138,6 +138,14 @@ Presentation {
 
         if (sections[localeName] !== undefined)
             return sections[localeName]
+
+        var baseLocaleName = localeName.split("@")[0]
+        if (sections[baseLocaleName] !== undefined)
+            return sections[baseLocaleName]
+
+        var shortLocaleName = baseLocaleName.split("_")[0]
+        if (sections[shortLocaleName] !== undefined)
+            return sections[shortLocaleName]
 
         if (sections["en_US"] !== undefined)
             return sections["en_US"]
