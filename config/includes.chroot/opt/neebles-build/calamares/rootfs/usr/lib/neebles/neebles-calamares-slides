@@ -40,10 +40,10 @@ HTTP_PORT = 28765
 CHUNK_SIZE = 1024 * 1024
 
 LOCALE_HEADER_RE = re.compile(
-    r"^[a-z]{2,3}(?:_[A-Za-z0-9]+)?$"
+    r"^[a-z]{2,3}(?:_[A-Za-z0-9]+)?(?:@[A-Za-z0-9_-]+)?$"
 )
 
-TAG_RE = re.compile(r"\[(/?)([A-Za-z][A-Za-z0-9_-]*)\]")
+TAG_RE = re.compile(r"\[(/?)([A-Za-z][A-Za-z0-9_-]*)(?:=([^\]\r\n]*))?\]")
 
 ALLOWED_CONTENT_TAGS = {
     "heading",
@@ -52,6 +52,7 @@ ALLOWED_CONTENT_TAGS = {
     "b",
     "i",
     "u",
+    "link",
 }
 
 running = True
@@ -218,6 +219,21 @@ def validate_text_bytes(data):
                 continue
 
             if name not in ALLOWED_CONTENT_TAGS:
+                return False
+
+            attribute = match.group(3)
+
+            if name == "link":
+                if closing:
+                    if attribute is not None:
+                        return False
+                elif attribute is None or re.fullmatch(
+                    r"""https://[^\s<>"']+""",
+                    attribute,
+                    flags=re.IGNORECASE,
+                ) is None:
+                    return False
+            elif attribute is not None:
                 return False
 
             if closing:

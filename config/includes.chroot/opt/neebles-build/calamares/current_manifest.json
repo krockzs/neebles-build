@@ -11551,8 +11551,8 @@
       "path": "rootfs/usr/lib/neebles/neebles-calamares-slides",
       "type": "file",
       "mode": "0o755",
-      "size": 13702,
-      "sha256": "b36f60343259c3a67adff44e2706b6f370957e7e1d3f723d887ceb2f36a25600"
+      "size": 14239,
+      "sha256": "c21b84b3afaff16d1d33f16f60446bb64ea2c6019d7373d54e36f2de8dda795d"
     },
     {
       "path": "rootfs/usr/lib/os-prober",
