@@ -72,8 +72,24 @@ Presentation {
         if (!/^https:\/\/[^\s<>"']+$/i.test(url) || label.length === 0)
             return ""
 
-        return '<a href="' + escapeHtml(url).replace(/"/g, "&quot;") + '">' +
-            richText(label) + '</a>'
+        // Preserve the URL as a target; never display the translated label.
+        return url
+    }
+
+    // An explicit click is forwarded to a user-owned desktop helper.
+    // Calamares itself runs privileged via pkexec; it must not launch a root browser.
+    function requestOpenLink(url) {
+        if (!/^https:\/\/[^\s<>"']+$/i.test(url) || currentSlot < 1)
+            return
+
+        var request = new XMLHttpRequest()
+        request.open("POST", "http://127.0.0.1:28766/open-link")
+        request.setRequestHeader("Content-Type", "application/json")
+        request.onreadystatechange = function() {
+            if (request.readyState === XMLHttpRequest.DONE && request.status !== 200)
+                console.warn("NEEBLES Calamares: link open failed; helper status=" + request.status)
+        }
+        request.send(JSON.stringify({slot: currentSlot, url: url}))
     }
 
     function extractBlock(content, name) {
@@ -472,17 +488,21 @@ Presentation {
                 }
 
                 Text {
+                    id: slideUrlText
                     width: parent.width
-                    text: presentation.slideLink
-                    textFormat: Text.RichText
-                    wrapMode: Text.WordWrap
+                    text: presentation.slideLink.replace(/^https:\/\//i, "")
+                    textFormat: Text.PlainText
+                    wrapMode: Text.WrapAnywhere
                     font.pixelSize: 16
+                    font.underline: true
                     color: "#A78BFA"
-                    linkColor: "#A78BFA"
                     visible: presentation.slideLink.length > 0
-                    onLinkActivated: function(link) {
-                        if (/^https:\/\/[^\s<>"']+$/i.test(link))
-                            Qt.openUrlExternally(link)
+
+                    MouseArea {
+                        anchors.fill: parent
+                        enabled: parent.visible
+                        cursorShape: Qt.PointingHandCursor
+                        onClicked: presentation.requestOpenLink(presentation.slideLink)
                     }
                 }
             }

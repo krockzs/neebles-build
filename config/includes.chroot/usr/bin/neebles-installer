@@ -17,7 +17,20 @@ fi
 
 xhost +si:localuser:root >/dev/null 2>&1 || true
 
+LINK_OPENER_PID=""
+# The wrapper is the interactive desktop user; Calamares is launched separately
+# through pkexec. Never run the URL helper under sudo or as root.
+if [ "$(id -u)" -ne 0 ] && [ -x /usr/lib/neebles/neebles-calamares-link-opener ]; then
+    /usr/lib/neebles/neebles-calamares-link-opener >/dev/null 2>&1 &
+    LINK_OPENER_PID=$!
+fi
+
 pkexec /opt/neebles-build/calamares/neebles-calamares-launcher
+if [ -n "$LINK_OPENER_PID" ]; then
+    kill "$LINK_OPENER_PID" 2>/dev/null || true
+    wait "$LINK_OPENER_PID" 2>/dev/null || true
+fi
+
 
 xhost -si:localuser:root >/dev/null 2>&1 || true
 
