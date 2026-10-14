@@ -16,6 +16,7 @@ Presentation {
     property string slideHeading: ""
     property string slideBody: ""
     property string slideHighlight: ""
+    property string slideLink: ""
 
     function setActiveSlot(number) {
         var xhr = new XMLHttpRequest()
@@ -32,6 +33,7 @@ Presentation {
         slideHeading = ""
         slideBody = ""
         slideHighlight = ""
+        slideLink = ""
     }
 
     function escapeHtml(value) {
@@ -56,6 +58,22 @@ Presentation {
             .replace(/\n/g, "<br/>")
 
         return result
+    }
+
+    function parseSlideLink(content) {
+        // Bloque independiente: [link=https://...], texto, [/link].
+        // Solo permitimos enlaces HTTPS y escapamos tanto URL como etiqueta.
+        var match = content.match(/\[link=([^\]\r\n]+)\]\s*([\s\S]*?)\s*\[\/link\]/)
+        if (!match)
+            return ""
+
+        var url = match[1].trim()
+        var label = match[2].trim()
+        if (!/^https:\/\/[^\s<>"']+$/i.test(url) || label.length === 0)
+            return ""
+
+        return '<a href="' + escapeHtml(url).replace(/"/g, "&quot;") + '">' +
+            richText(label) + '</a>'
     }
 
     function extractBlock(content, name) {
@@ -155,6 +173,7 @@ Presentation {
                 "highlight"
             )
         )
+        slideLink = parseSlideLink(content)
     }
 
     function loadSlideText(number) {
@@ -442,6 +461,21 @@ Presentation {
 
                     horizontalAlignment:
                         Text.AlignLeft
+                }
+
+                Text {
+                    width: parent.width
+                    text: presentation.slideLink
+                    textFormat: Text.RichText
+                    wrapMode: Text.WordWrap
+                    font.pixelSize: 16
+                    color: "#A78BFA"
+                    linkColor: "#A78BFA"
+                    visible: presentation.slideLink.length > 0
+                    onLinkActivated: function(link) {
+                        if (/^https:\/\/[^\s<>"']+$/i.test(link))
+                            Qt.openUrlExternally(link)
+                    }
                 }
             }
         }
