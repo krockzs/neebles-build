@@ -18,11 +18,34 @@ fi
 xhost +si:localuser:root >/dev/null 2>&1 || true
 
 LINK_OPENER_PID=""
-# The wrapper is the interactive desktop user; Calamares is launched separately
-# through pkexec. Never run the URL helper under sudo or as root.
+# Calamares runs under pkexec, but this bridge MUST remain in the desktop
+# user's KDE session. Preserve diagnostics instead of discarding errors.
 if [ "$(id -u)" -ne 0 ] && [ -x /usr/lib/neebles/neebles-calamares-link-opener ]; then
-    /usr/lib/neebles/neebles-calamares-link-opener >/dev/null 2>&1 &
+    LINK_OPENER_LOG_DIR="${XDG_CACHE_HOME:-$HOME/.cache}/neebles"
+    if mkdir -p -m 700 "$LINK_OPENER_LOG_DIR" 2>/dev/null; then
+        LINK_OPENER_LOG="$LINK_OPENER_LOG_DIR/calamares-link-opener.log"
+    else
+        LINK_OPENER_LOG="/dev/null"
+    fi
+    /usr/lib/neebles/neebles-calamares-link-opener >>"$LINK_OPENER_LOG" 2>&1 &
     LINK_OPENER_PID=$!
+
+    # The GUI must not race the helper's HTTP bind. No new package needed:
+    # curl is already part of the NEEBLES bootstrap infrastructure.
+    if command -v curl >/dev/null 2>&1; then
+        LINK_ATTEMPTS=0
+        while [ "$LINK_ATTEMPTS" -lt 25 ]; do
+            if curl --noproxy '*' --silent --fail --max-time 1 \
+                http://127.0.0.1:28766/health >/dev/null 2>&1; then
+                break
+            fi
+            if ! kill -0 "$LINK_OPENER_PID" 2>/dev/null; then
+                break
+            fi
+            LINK_ATTEMPTS=$((LINK_ATTEMPTS + 1))
+            sleep 0.1
+        done
+    fi
 fi
 
 pkexec /opt/neebles-build/calamares/neebles-calamares-launcher

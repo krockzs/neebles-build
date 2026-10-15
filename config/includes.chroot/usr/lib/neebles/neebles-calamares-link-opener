@@ -9,6 +9,7 @@ import json
 import os
 import re
 import subprocess
+import time
 import sys
 from http.server import BaseHTTPRequestHandler, HTTPServer
 from pathlib import Path
@@ -57,34 +58,79 @@ def allowed_link(slot, url):
         return False
 
 
+def desktop_openers(url):
+    """KDE-native first, then XDG/GIO default handlers, finally ISO browser.
+
+    No shell interpretation, no user-supplied executable, and no privileged
+    process. The Firefox fallback is only used if all default handlers fail.
+    """
+    candidates = (
+        ("/usr/bin/kde-open", url),
+        ("/usr/bin/xdg-open", url),
+        ("/usr/bin/gio", "open", url),
+        ("/usr/bin/firefox-esr", "--new-tab", url),
+    )
+    return [list(argv) for argv in candidates if Path(argv[0]).is_file()]
+
+
 def open_url(url):
-    """Use session user's xdg-open; no shell, sudo, pkexec or root browser."""
-    if os.geteuid() == 0:
+    """Launch a URL from the desktop user session, with ordered fallbacks."""
+    if os.geteuid() == 0 or not valid_url(url):
         return False
     if not any(os.environ.get(k) for k in (
         "DISPLAY", "WAYLAND_DISPLAY", "DBUS_SESSION_BUS_ADDRESS"
     )):
         return False
-    try:
-        proc = subprocess.Popen(
-            ["/usr/bin/xdg-open", url],
-            stdin=subprocess.DEVNULL,
-            stdout=subprocess.DEVNULL,
-            stderr=subprocess.DEVNULL,
-            start_new_session=True,
-            close_fds=True,
-        )
+
+    for argv in desktop_openers(url):
+        command_name = Path(argv[0]).name
         try:
-            return proc.wait(timeout=0.35) == 0
-        except subprocess.TimeoutExpired:
-            # Browser may remain running; detached by start_new_session.
-            return True
-    except OSError:
-        return False
+            proc = subprocess.Popen(
+                argv,
+                stdin=subprocess.DEVNULL,
+                stdout=subprocess.DEVNULL,
+                stderr=subprocess.DEVNULL,
+                start_new_session=True,
+                close_fds=True,
+            )
+            try:
+                code = proc.wait(timeout=1.25)
+                if code == 0:
+                    print(f"NEEBLES LINK: {command_name} accepted desktop URL", flush=True)
+                    return True
+                print(f"NEEBLES LINK: {command_name} failed (exit={code})", flush=True)
+            except subprocess.TimeoutExpired:
+                # A browser can remain running after processing the request.
+                print(f"NEEBLES LINK: {command_name} still running", flush=True)
+                return True
+        except OSError as error:
+            print(f"NEEBLES LINK: {command_name} unavailable ({type(error).__name__})", flush=True)
+
+    print("NEEBLES LINK: all desktop URL handlers failed", flush=True)
+    return False
 
 
 class LinkHandler(BaseHTTPRequestHandler):
     server_version = "NEEBLES-Calamares-URL/1.0"
+
+    def end_cors_headers(self):
+        # A local QML document may send Origin: null when POSTing JSON.
+        # Avoid wildcard CORS for this user-side localhost service.
+        if self.headers.get("Origin", "") == "null":
+            self.send_header("Access-Control-Allow-Origin", "null")
+            self.send_header("Vary", "Origin")
+
+    def do_OPTIONS(self):
+        if self.path != "/open-link" or self.headers.get("Origin", "") != "null":
+            self.respond(403, False, "origin_not_allowed")
+            return
+        self.send_response(204)
+        self.end_cors_headers()
+        self.send_header("Access-Control-Allow-Methods", "POST, OPTIONS")
+        self.send_header("Access-Control-Allow-Headers", "Content-Type")
+        self.send_header("Access-Control-Max-Age", "60")
+        self.send_header("Content-Length", "0")
+        self.end_headers()
 
     def respond(self, code, ok, error=None):
         obj = {"ok": ok}
@@ -93,6 +139,7 @@ class LinkHandler(BaseHTTPRequestHandler):
         data = json.dumps(obj, separators=(",", ":")).encode("utf-8")
         self.send_response(code)
         self.send_header("Content-Type", "application/json; charset=utf-8")
+        self.end_cors_headers()
         self.send_header("Content-Length", str(len(data)))
         self.send_header("Cache-Control", "no-store")
         self.send_header("X-Content-Type-Options", "nosniff")
@@ -145,6 +192,7 @@ def main():
         return 1
     try:
         http = HTTPServer((HOST, PORT), LinkHandler)
+        print("NEEBLES LINK: helper ready on 127.0.0.1:28766", flush=True)
         http.serve_forever(poll_interval=0.4)
     except OSError as e:
         print(f"FATAL: URL helper unavailable: {e}", file=sys.stderr)

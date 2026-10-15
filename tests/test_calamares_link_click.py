@@ -110,5 +110,69 @@ class LinkContractTests(unittest.TestCase):
                     t.join(timeout=2)
 
 
+    def test_native_kde_default_then_xdg_gio_firefox_fallback(self):
+        import subprocess
+        from unittest.mock import Mock
+        helper = self.helper
+        func = helper["open_url"]
+        cmds = helper["desktop_openers"]
+        with patch.dict(func.__globals__, {"desktop_openers": lambda url: [
+            ["/usr/bin/kde-open", url],
+            ["/usr/bin/xdg-open", url],
+            ["/usr/bin/gio", "open", url],
+            ["/usr/bin/firefox-esr", "--new-tab", url],
+        ]}):
+            with patch.object(func.__globals__["os"], "geteuid", return_value=1000):
+                with patch.dict(func.__globals__["os"].environ, {"DISPLAY": ":0"}):
+                    outcomes = [1, 1, 0]
+                    invocations = []
+                    def fake_popen(argv, **kwargs):
+                        invocations.append(argv[0])
+                        proc = Mock()
+                        proc.wait.return_value = outcomes.pop(0)
+                        return proc
+                    with patch.object(func.__globals__["subprocess"], "Popen", side_effect=fake_popen):
+                        self.assertTrue(func("https://www.google.cl"))
+                    self.assertEqual(invocations, ["/usr/bin/kde-open", "/usr/bin/xdg-open", "/usr/bin/gio"])
+
+    def test_helper_rejects_root_and_bad_url_before_launch(self):
+        func = self.helper["open_url"]
+        with patch.object(func.__globals__["os"], "geteuid", return_value=0):
+            with patch.object(func.__globals__["subprocess"], "Popen") as popen:
+                self.assertFalse(func("https://www.google.cl"))
+                popen.assert_not_called()
+        with patch.object(func.__globals__["os"], "geteuid", return_value=1000):
+            self.assertFalse(func("file:///tmp/exploit"))
+
+    def test_cors_preflight_restricts_origin(self):
+        handler = self.helper["LinkHandler"]
+        server = HTTPServer(("127.0.0.1", 0), handler)
+        thread = threading.Thread(target=server.serve_forever, daemon=True)
+        thread.start()
+        try:
+            url = f"http://127.0.0.1:{server.server_port}/open-link"
+            request = urllib.request.Request(url, method="OPTIONS", headers={"Origin": "null", "Access-Control-Request-Method": "POST"})
+            with urllib.request.urlopen(request, timeout=3) as response:
+                self.assertEqual(response.status, 204)
+                self.assertEqual(response.headers.get("Access-Control-Allow-Origin"), "null")
+            request = urllib.request.Request(url, method="OPTIONS", headers={"Origin": "https://untrusted.example"})
+            with self.assertRaises(urllib.error.HTTPError) as cm:
+                urllib.request.urlopen(request, timeout=3)
+            self.assertEqual(cm.exception.code, 403)
+        finally:
+            server.shutdown()
+            server.server_close()
+            thread.join(timeout=2)
+
+    def test_link_failure_is_visible_without_console(self):
+        qml = QML.read_text(encoding="utf-8")
+        self.assertIn('slideLinkStatus = "⚠ "', qml)
+        self.assertIn('text: presentation.slideLinkStatus', qml)
+        self.assertIn('id: slideUrlText', qml)
+        wrapper = WRAPPER.read_text(encoding="utf-8")
+        self.assertIn('calamares-link-opener.log', wrapper)
+        self.assertIn('http://127.0.0.1:28766/health', wrapper)
+
+
 if __name__ == "__main__":
     unittest.main()

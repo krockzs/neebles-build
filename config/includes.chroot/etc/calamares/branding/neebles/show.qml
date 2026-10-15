@@ -17,6 +17,7 @@ Presentation {
     property string slideBody: ""
     property string slideHighlight: ""
     property string slideLink: ""
+    property string slideLinkStatus: ""
 
     function setActiveSlot(number) {
         var xhr = new XMLHttpRequest()
@@ -34,6 +35,7 @@ Presentation {
         slideBody = ""
         slideHighlight = ""
         slideLink = ""
+        slideLinkStatus = ""
     }
 
     function escapeHtml(value) {
@@ -82,14 +84,33 @@ Presentation {
         if (!/^https:\/\/[^\s<>"']+$/i.test(url) || currentSlot < 1)
             return
 
+        slideLinkStatus = "…"
+        linkRequestTimeout.restart()
         var request = new XMLHttpRequest()
         request.open("POST", "http://127.0.0.1:28766/open-link")
         request.setRequestHeader("Content-Type", "application/json")
         request.onreadystatechange = function() {
-            if (request.readyState === XMLHttpRequest.DONE && request.status !== 200)
-                console.warn("NEEBLES Calamares: link open failed; helper status=" + request.status)
+            if (request.readyState !== XMLHttpRequest.DONE)
+                return
+            linkRequestTimeout.stop()
+            if (request.status === 200) {
+                presentation.slideLinkStatus = ""
+            } else {
+                presentation.slideLinkStatus = "⚠ " + request.status
+                console.warn("NEEBLES Calamares: link bridge status=" + request.status)
+            }
         }
         request.send(JSON.stringify({slot: currentSlot, url: url}))
+    }
+
+    Timer {
+        id: linkRequestTimeout
+        interval: 4000
+        repeat: false
+        onTriggered: {
+            if (presentation.slideLinkStatus === "…")
+                presentation.slideLinkStatus = "⚠ 0"
+        }
     }
 
     function extractBlock(content, name) {
@@ -504,6 +525,15 @@ Presentation {
                         cursorShape: Qt.PointingHandCursor
                         onClicked: presentation.requestOpenLink(presentation.slideLink)
                     }
+                }
+
+                Text {
+                    width: parent.width
+                    text: presentation.slideLinkStatus
+                    textFormat: Text.PlainText
+                    font.pixelSize: 13
+                    color: "#FCA5A5"
+                    visible: presentation.slideLinkStatus.length > 0
                 }
             }
         }
